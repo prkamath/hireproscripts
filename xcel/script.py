@@ -1,0 +1,155 @@
+from dbconstants import *
+import MySQLdb
+from openpyxl import load_workbook
+from datetime import datetime
+
+def checkForCandidates(candidatelist):
+    db = MySQLdb.connect(host=DB_IP,    # your host, usually localhost
+            user=DB_USER,         # your username
+            passwd=DB_PASSWORD,  # your password
+            db=DB_DBNAME)        # name of the data base
+    cur = db.cursor()
+    totalexistingcandidates=0
+    print "\n===========================================\n"
+    print "The emails we will test for are",candidatelist
+    print "\n===========================================\n"
+    for emailid in candidatelist:
+        fetched=0
+        tempString="select id,email1 from candidates where email1='%s'"%emailid
+        cur.execute(tempString)
+        for row in cur.fetchall():
+            print row
+            fetched=1
+        if (fetched==1):
+            totalexistingcandidates=totalexistingcandidates+1
+        else:
+            print "Unable to fetch record for " + emailid
+    print "Total fetched candidates are " + str(totalexistingcandidates) 
+    db.close()
+
+def checkForUsers(userlist):
+    db = MySQLdb.connect(host=DB_IP,    # your host, usually localhost
+            user=DB_USER,         # your username
+            passwd=DB_PASSWORD,  # your password
+            db=DB_DBNAME)        # name of the data base
+    cur = db.cursor()
+    totalexistingusers=0
+    print "\n===========================================\n"
+    print "The emails we will test for are",userlist
+    print "\n===========================================\n"
+    for emailid in userlist:
+        fetched=0
+        tempString="select id,email1 from users where email1='%s'"%emailid
+        cur.execute(tempString)
+        for row in cur.fetchall():
+            print row
+            fetched=1
+        if (fetched==1):
+            totalexistingusers=totalexistingusers+1
+        else:
+            print "Unable to fetch record for " + emailid
+    print "Total fetched users are " + str(totalexistingusers) 
+    db.close()
+
+def makeSenseOfDate(inDate):
+    if (inDate.lower().find("jan")>-1 or inDate.lower().find("feb")>-1):
+        outDate=inDate + " 2016"
+        return outDate
+    outDate=inDate+" 2015"
+    return outDate
+
+def parseRowIntoDict(row,singleRow):
+    if (row[0].value==None):
+        return -1
+    singleRow['CandidateId']=row[0].value
+    singleRow['EmailId']=row[3].value
+    singleRow['ExpectedDOJ']=row[12].value
+    singleRow['LastDateCalled']=row[13].value
+    singleRow['Action']=row[14].value
+    singleRow['Inconsistencies']=[]
+    tempQueryDetails={}
+    singleRow['QueryDetails']=tempQueryDetails
+    try:
+        tempQueryDetails['QueryLevelRaised']=row[15].value
+        tempQueryDetails['QueryType']=row[16].value
+        tempQueryDetails['QueryRaisedDate']=row[17].value
+        tempQueryDetails['QueryResolvedDate']=row[18].value
+        gap=tempQueryDetails['QueryResolvedDate']-tempQueryDetails['QueryRaisedDate']
+        tempQueryDetails['NoOfDaysForQueryResolution']=gap.days
+    except:
+        singleRow['Inconsistencies'].append("DateTimeError")
+
+    singleRow['JoiningStatus']=row[21].value
+    callStatusDetails=[]
+    singleRow['CallStatus']=callStatusDetails
+    allDetails=row[22].value.splitlines()
+    for detail in allDetails:
+        detail=detail.encode("utf-8")
+        detail=detail.replace('\xe2\x80\x93','-')
+        detail=detail.replace(':','-')
+        commentDate=detail.split("-")[0]
+        print commentDate
+        newcommentDate=makeSenseOfDate(commentDate)
+        print newcommentDate
+        newcommentDate=newcommentDate.replace("th","")
+        try:
+            finalDate=datetime.strptime(newcommentDate,"%d %b %Y")
+        except:
+            continue
+
+        singleConvrsn={}
+        singleConvrsn['date']=finalDate
+        singleConvrsn['comment']=detail.split("-")[1]
+        callStatusDetails.append(singleConvrsn)
+
+    return 0
+
+def updateCandidateStaffingProfile(staffingProfileId,expectedDateOfJoining):
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if __name__=="__main__":
+    candId=getCandidateStaffingProfileId("prkamath@gmail.com")
+    print candId
+    wb2=load_workbook(XCEL_SHEET_NAME)
+    sheetnames=wb2.get_sheet_names()
+    ws=wb2.active
+    count=0
+    allRows=[]
+    for row in ws.iter_rows(row_offset=1):
+        singleRow={}
+        ret=parseRowIntoDict(row,singleRow)
+        if (0 == ret):
+            singleRow['candidatestaffingprofileid']= getCandidateStaffingProfileId(singleRow['EmailId'])
+            allRows.append(singleRow)
+
+    for row in allRows:
+        if (count<=4):
+            print row['CallStatus']
+            count=count+1
+
+    print "Total rows=" + str(len(allRows))
+
+'''
+    checkForUsers(["prkamath@gmail.com","sheela@we.com"])
+    checkForCandidates(["prkamath@gmail.com","sheela@we.com"])
+'''
