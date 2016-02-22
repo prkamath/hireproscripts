@@ -67,6 +67,7 @@ def parseRowIntoDict(row,singleRow):
     singleRow['LastDateCalled']=row[13].value
     singleRow['Action']=row[14].value
     singleRow['Inconsistencies']=[]
+    singleRow['spocname']=row[25].value
     tempQueryDetails={}
     singleRow['QueryDetails']=tempQueryDetails
     try:
@@ -74,6 +75,7 @@ def parseRowIntoDict(row,singleRow):
         tempQueryDetails['QueryType']=row[16].value
         tempQueryDetails['QueryRaisedDate']=row[17].value
         tempQueryDetails['QueryResolvedDate']=row[18].value
+
         gap=tempQueryDetails['QueryResolvedDate']-tempQueryDetails['QueryRaisedDate']
         tempQueryDetails['NoOfDaysForQueryResolution']=gap.days
     except:
@@ -104,45 +106,77 @@ def parseRowIntoDict(row,singleRow):
 
     return 0
 
+def getCandidateStaffingProfileId(email):
+    db = MySQLdb.connect(host=DB_IP,    # your host, usually localhost
+            user=DB_USER,         # your username
+            passwd=DB_PASSWORD,  # your password
+            db=DB_DBNAME)        # name of the data base
+    cur = db.cursor()
+
+    tempString="select candidatestaffingprofile_id from candidates where email1='%s'"%email
+    cur.execute(tempString)
+    row=cur.fetchone()
+    candId=row[0]
+    db.close()
+    return candId
+
+def createCandSpocs(candidateid,spocName,spocDict):
+    db = MySQLdb.connect(host=DB_IP,    # your host, usually localhost
+            user=DB_USER,         # your username
+            passwd=DB_PASSWORD,  # your password
+            db=DB_DBNAME)        # name of the data base
+    cur = db.cursor()
+    guidval=uuid.uuid4()
+    tempstring="insert into candidate_spocs (candidate_id,user_id,guid,is_deleted,created_on,created_by) values (%d,%d,%s,0,now(),%d)"\
+               %(candidateid,spocDict[spocName],guidval,SPOC_CREATED_BY)
+    print tempstring
+    cur.execute(tempstring)
+    db.commit()
+    db.close()
+
+
 def updateCandidateStaffingProfile(staffingProfileId,expectedDateOfJoining):
+    db = MySQLdb.connect(host=DB_IP,    # your host, usually localhost
+            user=DB_USER,         # your username
+            passwd=DB_PASSWORD,  # your password
+            db=DB_DBNAME)        # name of the data base
+    cur = db.cursor()
+    dateOfJ=expectedDateOfJoining.strftime('%Y-%m-%d')
+    print dateOfJ
+    tempString="update candidate_staffing_profiles set expected_joining_date='%s' where id=%d"%(dateOfJ,staffingProfileId)
+    print tempString
+    cur.execute(tempString)
+    db.commit()
+    db.close()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+def insertCandStaffingQueries
 
 if __name__=="__main__":
-    candId=getCandidateStaffingProfileId("prkamath@gmail.com")
-    print candId
+    #candId=getCandidateStaffingProfileId("prkamath@gmail.com")
+    #updateCandidateStaffingProfile(candId,datetime(2016, 1, 28, 0, 0))
+    #print candId
     wb2=load_workbook(XCEL_SHEET_NAME)
     sheetnames=wb2.get_sheet_names()
     ws=wb2.active
     count=0
     allRows=[]
+    spocdict={}
+    spocdict['Akanksha']=16049
+    spocdict['Soumya']=16050
+    spocdict['Riya']=16052
+    spocdict['Dhivya']=16053
+
     for row in ws.iter_rows(row_offset=1):
         singleRow={}
         ret=parseRowIntoDict(row,singleRow)
+        singleRow['candidatestaffingprofileid']= getCandidateStaffingProfileId(singleRow['EmailId'])
         if (0 == ret):
-            singleRow['candidatestaffingprofileid']= getCandidateStaffingProfileId(singleRow['EmailId'])
             allRows.append(singleRow)
 
-    for row in allRows:
+
+    for singleRow in allRows:
+        updateCandidateStaffingProfile(singleRow['candidatestaffingprofileid'],singleRow['ExpectedDOJ'])
+        createCandSpocs(singleRow['CandidateId'],singleRow['spocname'],spocdict)
         if (count<=4):
             print row['CallStatus']
             count=count+1
