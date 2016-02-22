@@ -116,6 +116,8 @@ def getCandidateStaffingProfileId(email):
     tempString="select candidatestaffingprofile_id from candidates where email1='%s'"%email
     cur.execute(tempString)
     row=cur.fetchone()
+    if (row == None):
+        return -1
     candId=row[0]
     db.close()
     return candId
@@ -149,7 +151,7 @@ def updateCandidateStaffingProfile(staffingProfileId,expectedDateOfJoining):
     db.commit()
     db.close()
 
-def insertCandStaffingQueries
+
 
 if __name__=="__main__":
     #candId=getCandidateStaffingProfileId("prkamath@gmail.com")
@@ -173,13 +175,19 @@ if __name__=="__main__":
         if (0 == ret):
             allRows.append(singleRow)
 
+    #Log the stuff
+    count=0
+    countMax=4
+    for singleRow in allRows:
+        if (count<=countMax):
+            print singleRow
+            count=count+1
 
+
+    #Now update the DOJ for all entries
     for singleRow in allRows:
         updateCandidateStaffingProfile(singleRow['candidatestaffingprofileid'],singleRow['ExpectedDOJ'])
         createCandSpocs(singleRow['CandidateId'],singleRow['spocname'],spocdict)
-        if (count<=4):
-            print row['CallStatus']
-            count=count+1
 
     print "Total rows=" + str(len(allRows))
 
