@@ -3,6 +3,10 @@ import MySQLdb
 from openpyxl import load_workbook
 from datetime import datetime
 import uuid
+import json
+import requests
+import random
+import copy
 
 def checkForCandidates(candidatelist):
     db = MySQLdb.connect(host=DB_IP,    # your host, usually localhost
@@ -59,12 +63,18 @@ def makeSenseOfDate(inDate):
     outDate=inDate+" 2015"
     return outDate
 
+def morphRows(allRows):
+    for singleRow in allRows:
+        singleRow['EmailId']="%s%d"%(singleRow['EmailId'],random.randint(1,200))
+        singleRow['CandidateId']=singleRow['CandidateId']+random.randint(1,100)
+
 def parseRowIntoDict(row,singleRow):
     if (row[0].value==None):
         return -1
     singleRow['CandidateId']=row[0].value
     singleRow['EmailId']=row[3].value
     singleRow['ExpectedDOJ']=row[12].value
+    singleRow['Name']=row[1].value
     singleRow['LastDateCalled']=row[13].value
     singleRow['Action']=row[14].value
     singleRow['Inconsistencies']=[]
@@ -209,10 +219,27 @@ def insertCandStaffingQueries(csp_id,q_cat,q_criticality,spoc,is_pending,created
     db.close()
 
 def createCandidates(allRows):
+    allDicts=[]
+    dict1=json.loads(template)
+    candidateList=dict1["candidateList"]
+
     for row in allRows:
-        print x
+        tempDict=copy.deepcopy(candidateList[0])
+        tempDict["OriginalSourceID"]=row['CandidateId']
+        tempDict["Email1"]=row['EmailId']
+        tempDict["Name"]=row['Name']
+        tempDict["Mobile1"]=str(random.randint(1,99999999999))
+        allDicts.append(tempDict)
 
-
+    dict1["candidateList"]=allDicts
+    jsonStr=json.dumps(dict1)
+    print jsonStr
+    serviceUrl=SERVICE_URL%(SERVICE_IP)
+    headers={}
+    headers['Content-Type']="""application/json; charset=utf-8"""
+    headers['X-AUTH-TOKEN']=AUTH_TOKEN
+    ret=requests.post(url=serviceUrl,data=jsonStr,headers=headers)
+    print ret.text
 
 if __name__=="__main__":
     #candId=getCandidateStaffingProfileId("prkamath@gmail.com")
@@ -231,40 +258,43 @@ if __name__=="__main__":
     query_cat_dict={}
     query_criticality_dict={}
 
+    count=0
+
     for row in ws.iter_rows(row_offset=1):
         singleRow={}
         ret=parseRowIntoDict(row,singleRow)
-        if (0==ret) and ('EmailId' in singleRow):
+        if (0==ret) and (count<=MAX_ROWS_TO_PARSE) and ('EmailId' in singleRow):
+            allRows.append(singleRow)
+        count = count+1
+
+    morphRows(allRows)
+    #Create the candidates also
+    createCandidates(allRows)
+
+    #Load all remaining pieces
+    for singleRow in allRows:
+        print singleRow
+        if ('EmailId' in singleRow):
             singleRow['candidatestaffingprofileid']= getCandidateStaffingProfileId(singleRow['EmailId'])
             singleRow['CandidateIdPrimaryKey']=getCandidateId(singleRow['EmailId'])
-            allRows.append(singleRow)
-        else:
-            print singleRow
 
-    #Log the stuff
-    count=0
-    countMax=4
-    for singleRow in allRows:
-        if (count<=countMax):
-            print singleRow
-            count=count+1
-
-
-    #Now update the DOJ for all entries
     for singleRow in allRows:
         if (singleRow['CandidateIdPrimaryKey'] == -1):
             continue
+
+        #Now update the DOJ for all entries
         updateCandidateStaffingProfile(singleRow['candidatestaffingprofileid'],singleRow['ExpectedDOJ'])
         createCandSpocs(singleRow['CandidateIdPrimaryKey'],singleRow['spocname'],spocdict)
         is_pending = 0
-        if 'QueryType' in singleRow:
+        queryDetails=singleRow['QueryDetails']
+        if 'QueryType' in queryDetails:
             insertCandStaffingQueries(singleRow['candidatestaffingprofileid'],
-                        query_cat_dict[singleRow['QueryType']],
-                        query_criticality_dict[singleRow['QueryLevelRaised']],
+                        query_cat_dict[queryDetails['QueryType']],
+                        query_criticality_dict[queryDetails['QueryLevelRaised']],
                         spocdict[singleRow['spocname']],
                         is_pending,
-                        singleRow['QueryRaisedDate'],
-                        singleRow['QueryResolvedDate'])
+                        queryDetails['QueryRaisedDate'],
+                        queryDetails['QueryResolvedDate'])
 
     print "Total rows=" + str(len(allRows))
 
