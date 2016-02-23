@@ -7,6 +7,7 @@ import json
 import requests
 import random
 import copy
+import sys,os
 
 def checkForCandidates(candidatelist):
     db = MySQLdb.connect(host=DB_IP,    # your host, usually localhost
@@ -258,23 +259,24 @@ def createStatusEntries(ca_id,new_status_id,spoc,last_called):
     qplist.append(DB_TENANT_ID)
     qplist.append(ca_id)
     ss_id = None
-    version = None
+    version = 0
     resultSet = []
     colIdx    = {}
     unused = None
     is_deleted=0
     (colIdx,resultSet,unused) = int_executeQuery(query,qplist)
     if len(resultSet) > 0:
-        ss_id = row[colIdx["id"]]
+        ss_id = resultSet[0][colIdx["id"]]
         print ("SS entry already exists for cand=%s with id =%s"%(ca_id,ss_id))
-        version = row[colIdx["version"]]
+        version = resultSet[0][colIdx["version"]]
         create_ss_entry = False
-        if row[colIdx["current_status_id"]] == new_status_id:
+        if resultSet[0][colIdx["current_status_id"]] == new_status_id:
             print ("CurrentStatus for cand=%s with id =%s is the same as the new one"%(ca_id,ss_id))
             create_ssh_entry = False
     if create_ss_entry == True:
         query = """insert into staffing_statuss (version,current_status_id,tenant_id,candidate_id,created_by,created_on,is_deleted,guid) "
                    values(%s,%s,%s,%s,%s,%s,%s,%s)"""
+        qplist = []
         qplist.append("1")
         qplist.append(new_status_id)
         qplist.append(DB_TENANT_ID)
@@ -289,26 +291,24 @@ def createStatusEntries(ca_id,new_status_id,spoc,last_called):
         query = """ update staffing_statuss set (version,current_status_id,modified_by,modified_on) 
                     values (%s,%s,%s,%s) where id = %s"""
         version += 1
+        qplist = []
         qplist.append(version)
         qplist.append(new_status_id)
         qplist.append(spoc)
-        qplist.append(last_called)
+        qplist.append(str(last_called))
         qplist.append(ss_id)
         int_executeQuery(query,qplist)
         print ("Updated SS entry for id =%s"%(ss_id))
 
     if create_ssh_entry == True:
-        query = """insert into staffing_status_historys(version,current_status_id,tenant_id,candidate_id,
-                   created_by,created_on,is_deleted,guid) "
-                   values(1,%s,%s,%s,%s,%s,%s,%s)"""
-        qplist.append(version)
+        query = """insert into staffing_status_historys(status_id,
+                   created_by,created_on,staffingstatus_id)
+                   values(%s,%s,%s,%s)"""
+        qplist = []
         qplist.append(new_status_id)
-        qplist.append(DB_TENANT_ID)
-        qplist.append(ca_id)
         qplist.append(spoc)
-        qplist.append(last_called)
-        qplist.append(is_deleted)
-        qplist.append(uuid.uuid4())
+        qplist.append(str(last_called))
+        qplist.append(ss_id)
         sshid = None
         (colIdx,resultSet,sshid) = int_executeQuery(query,qplist)
         print ("Inserted SSH entry with id =%s"%(sshid))
