@@ -42,3 +42,28 @@ template= """{
 }"""
 
 
+def populateMetaData(spocdict,query_cat_dict,query_criticality_dict):
+    spocdict['Akanksha']=16049
+    spocdict['Soumya']=16050
+    spocdict['Riya']=16052
+    spocdict['Dhivya']=16053
+
+    query_cat_dict["CTC Revisions"]=1
+    query_cat_dict["Joining bonus"]=2
+    query_cat_dict["Location change"]=3
+    query_cat_dict["Accommodation eligibility"]=4
+    query_cat_dict["Role Clarity"]=5
+    query_cat_dict["Offer letter not received"]=6
+    query_cat_dict["Links not received"]=7
+    query_cat_dict["Unable to upload documents"]=8
+    query_cat_dict["Mismatch in candidate details"]=9
+    query_cat_dict["Insufficient Document"]=10
+    query_cat_dict["Awaiting for Joining booklet"]=11
+    query_cat_dict["Date of Joining Confirmation"]=12
+    query_cat_dict["DOJ Extension"]=13
+    query_cat_dict["NA"]=14
+
+    query_criticality_dict['Level 1']=1
+    query_criticality_dict['Level 2']=2
+    query_criticality_dict['Level 3']=3
+    query_criticality_dict['No Query']=4

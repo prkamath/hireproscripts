@@ -209,6 +209,7 @@ def insertCandStaffingQueries(csp_id,q_cat,q_criticality,spoc,is_pending,created
     q_paramlist.append(DB_TENANT_ID)
     q_paramlist.append(spoc)
     q_paramlist.append(created_on)
+    q_paramlist.append(spoc)
     q_paramlist.append(resolved_on)
     q_paramlist.append(is_pending)
     q_paramlist.append(csp_id)
@@ -251,15 +252,11 @@ if __name__=="__main__":
     count=0
     allRows=[]
     spocdict={}
-    spocdict['Akanksha']=16049
-    spocdict['Soumya']=16050
-    spocdict['Riya']=16052
-    spocdict['Dhivya']=16053
     query_cat_dict={}
     query_criticality_dict={}
+    populateMetaData(spocdict,query_cat_dict,query_criticality_dict)
 
     count=0
-
     for row in ws.iter_rows(row_offset=1):
         singleRow={}
         ret=parseRowIntoDict(row,singleRow)
@@ -267,6 +264,9 @@ if __name__=="__main__":
             allRows.append(singleRow)
         count = count+1
 
+
+    #Here we ensure uniqueness of the createdCandidates. This and the next line is purely for debuggin
+    #When actually using we know that the candidates would have already been created
     morphRows(allRows)
     #Create the candidates also
     createCandidates(allRows)
