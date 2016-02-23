@@ -204,6 +204,44 @@ def int_executeQuery(query,queryParamList):
 	print("Error in creating/executing query against DB [%s] with params %s [%s:%s:%s]" %(query,queryParamList,fname,exc_tb.tb_lineno,str(e)))
     return (columns,resultSet,inserted_id)
 
+def createCallData(ca_id,spoc,created_on,remarks):
+    query = """insert into staffing_pofus (version, candidate_id,tenant_id,created_by,created_on, is_deleted,guid)
+             values (%s,%s,%s,%s,%s,%s,%s)"""
+    qplist = []
+    sp_id = None
+    qplist.append("1")
+    qplist.append(ca_id)
+    qplist.append(DB_TENANT_ID)
+    qplist.append(spoc)
+    qplist.append(str(created_on))
+    qplist.append("0")
+    qplist.append(str(uuid.uuid4()))
+    (colIdx,resultSet,sp_id) = int_executeQuery(query,qplist)
+    print ("Inserted SP entry for cand=%s with id =%s"%(ca_id,sp_id))
+
+    query = """insert into staffing_pofu_calls (caller, call_type,current_status_id,created_by,created_on,staffingpofu_id)
+             values (%s,%s,%s,%s,%s,%s)"""
+    qplist = []
+    qplist.append(spoc)
+    qplist.append(OUTBOUND_CALL)
+    qplist.append(COMPLETED_CALL)
+    qplist.append(spoc)
+    qplist.append(str(created_on))
+    qplist.append(sp_id)
+    (colIdx,resultSet,spc_id) = int_executeQuery(query,qplist)
+    print ("Inserted SPC entry for cand=%s with id =%s"%(ca_id,spc_id))
+    query = """insert into staffing_pofu_call_historys (status_id,comment,created_by,created_on,staffingpofucall_id) 
+               values(%s,%s,%s,%s,%s)
+            """
+    qplist = []
+    qplist.append(COMPLETED_CALL)
+    qplist.append(remarks)
+    qplist.append(spoc)
+    qplist.append(str(created_on))
+    qplist.append(spc_id)
+    (colIdx,resultSet,spch_id) = int_executeQuery(query,qplist)
+    print ("Inserted SPCH entry for cand=%s with id =%s"%(ca_id,spch_id))
+
 def createStatusEntries(ca_id,new_status_id,spoc,last_called):
     """
         qplist.append(ca_id)
@@ -435,6 +473,12 @@ if __name__=="__main__":
                             spocdict[singleRow['spocname']],
                             singleRow['LastDateCalled']
                            )
+        #NAVEENA remarks need to be filled!!
+        createCallData(
+                      singleRow['CandidateIdPrimaryKey'],
+                      spocdict[singleRow['spocname']],
+                      singleRow['LastDateCalled'],
+                      remarks)
 
     print "Total rows=" + str(len(allRows))
 
