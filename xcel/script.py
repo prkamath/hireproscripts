@@ -152,6 +152,45 @@ def updateCandidateStaffingProfile(staffingProfileId,expectedDateOfJoining):
     db.close()
 
 
+def insertCandStaffingQueries(csp_id,q_cat,q_criticality,spoc,is_pending,created_on,resolved_on):
+    """
+    +------------------------+----------+------+-----+---------+----------------+
+    | Field                  | Type     | Null | Key | Default | Extra          |
+    +------------------------+----------+------+-----+---------+----------------+
+    | id                     | int(11)  | NO   | PRI | NULL    | auto_increment |
+    | tenant_id              | int(11)  | YES  | MUL | NULL    |                |
+    | created_by             | int(11)  | NO   |     | NULL    |                |
+    | created_on             | datetime | NO   |     | NULL    |                |
+    | modified_by            | int(11)  | YES  |     | NULL    |                |
+    | modified_on            | datetime | YES  |     | NULL    |                |
+    | is_pending             | int(11)  | YES  |     | NULL    |                |
+    | candstaffingprofile_id | int(11)  | YES  | MUL | NULL    |                |
+    | querycategory_id       | int(11)  | YES  |     | NULL    |                |
+    | querycriticality_id    | int(11)  | NO   |     | NULL    |                |
+    | query_details          | text     | YES  |     | NULL    |                |
+    +------------------------+----------+------+-----+---------+----------------+
+    """
+    db = MySQLdb.connect(host=DB_IP,    # your host, usually localhost
+            user=DB_USER,         # your username
+            passwd=DB_PASSWORD,  # your password
+            db=DB_DBNAME)        # name of the data base
+    cur = db.cursor()
+    query = """ insert into cand_staffing_querys (tenant_id,created_by,created_on,modified_by,modified_on,
+                is_pending,candstaffingprofile_id, 
+                querycategory_id, querycriticality_id) values(%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
+    q_paramlist = []
+    q_paramlist.append(DB_TENANT_ID)
+    q_paramlist.append(spoc)
+    q_paramlist.append(created_on)
+    q_paramlist.append(resolved_on)
+    q_paramlist.append(is_pending)
+    q_paramlist.append(csp_id)
+    q_paramlist.append(q_cat)
+    q_paramlist.append(q_criticality)
+    cur.execute(query,q_paramlist)
+    db.commit()
+    db.close()
+    
 
 if __name__=="__main__":
     #candId=getCandidateStaffingProfileId("prkamath@gmail.com")
@@ -167,6 +206,8 @@ if __name__=="__main__":
     spocdict['Soumya']=16050
     spocdict['Riya']=16052
     spocdict['Dhivya']=16053
+    query_cat_dict={}
+    query_criticality_dict={}
 
     for row in ws.iter_rows(row_offset=1):
         singleRow={}
@@ -188,6 +229,14 @@ if __name__=="__main__":
     for singleRow in allRows:
         updateCandidateStaffingProfile(singleRow['candidatestaffingprofileid'],singleRow['ExpectedDOJ'])
         createCandSpocs(singleRow['CandidateId'],singleRow['spocname'],spocdict)
+        is_pending = 0
+        insertCandStaffingQueries(singleRow['candidatestaffingprofileid'],
+                        query_cat_dict[singleRow['QueryType']],
+                        query_criticality_dict[singleRow['QueryLevelRaised']],
+                        spocdict[singleRow['spocname']],
+                        is_pending,
+                        singleRow['QueryRaisedDate'],
+                        singleRow['QueryResolvedDate'])
 
     print "Total rows=" + str(len(allRows))
 
