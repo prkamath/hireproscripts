@@ -42,28 +42,48 @@ template= """{
 }"""
 
 
-def populateMetaData(spocdict,query_cat_dict,query_criticality_dict):
+def populateMetaData(spocdict,query_cat_dict,query_criticality_dict,status_dict):
     spocdict['Akanksha']=16049
     spocdict['Soumya']=16050
     spocdict['Riya']=16052
     spocdict['Dhivya']=16053
 
-    query_cat_dict["CTC Revisions"]=1
-    query_cat_dict["Joining bonus"]=2
-    query_cat_dict["Location change"]=3
-    query_cat_dict["Accommodation eligibility"]=4
-    query_cat_dict["Role Clarity"]=5
-    query_cat_dict["Offer letter not received"]=6
-    query_cat_dict["Links not received"]=7
-    query_cat_dict["Unable to upload documents"]=8
-    query_cat_dict["Mismatch in candidate details"]=9
-    query_cat_dict["Insufficient Document"]=10
-    query_cat_dict["Awaiting for Joining booklet"]=11
-    query_cat_dict["Date of Joining Confirmation"]=12
-    query_cat_dict["DOJ Extension"]=13
-    query_cat_dict["NA"]=14
+    query_cat_dict["CTC Revisions"]=36161
+    query_cat_dict["Joining bonus"]=36157
+    query_cat_dict["Location change"]=36168
+    query_cat_dict["Accommodation eligibility"]=36167
+    query_cat_dict["Role Clarity"]=36169
+    query_cat_dict["Offer letter not received"]=36159
+    query_cat_dict["Links not received"]=36164
+    query_cat_dict["Unable to upload documents"]=36166
+    query_cat_dict["Mismatch in candidate details"]=36162
+    query_cat_dict["Insufficient Document"]=36165
+    query_cat_dict["Awaiting for Joining booklet"]=36160
+    query_cat_dict["Date of Joining Confirmation"]=36163
+    query_cat_dict["DOJ Extension"]=36158
+    query_cat_dict["NA"]=None
 
-    query_criticality_dict['Level 1']=1
-    query_criticality_dict['Level 2']=2
-    query_criticality_dict['Level 3']=3
-    query_criticality_dict['No Query']=4
+    query_criticality_dict['Level 1']=36170
+    query_criticality_dict['Level 2']=36171
+    query_criticality_dict['Level 3']=36172
+    query_criticality_dict['No Query']=None
+    status_dict = {
+        "BGV Yet to Complete / Initiate":"142023",
+        "Yet to Intiate POFU":"142024",
+        "Yet to Intiate POFU":"142025",
+        "Yet to Accept":"142026",
+        "Offer Letter Not Received":"142027",
+        "Offer Accepted & DOJ To Be Confirmed with Queries":"142028",
+        "Offer Accepted & DOJ To Be Confirmed":"142029",
+        "Offer Accepted & DOJ Confirmed with Queries":"142030",
+        "Offer Accepted & DOJ Confirmed":"142031",
+        "Joining Date Elapsed":"142032",
+        "Invalid Contact Details":"142033",
+        "Yet to Initiate POFU":"142034",
+        "Dropped":"142035",
+        "Dropped":"142036",
+        "Declined":"142037",
+        "Declined":"142038",
+        "Joining":"142039",
+        "Joined":"142040",
+    }

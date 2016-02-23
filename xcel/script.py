@@ -178,6 +178,136 @@ def updateCandidateStaffingProfile(staffingProfileId,expectedDateOfJoining):
     db.commit()
     db.close()
 
+def int_executeQuery(query,queryParamList):
+    resultSet = []
+    columns = {}
+    inserted_id = None
+    try:
+        db = MySQLdb.connect(host=DB_IP,    # your host, usually localhost
+            user=DB_USER,         # your username
+            passwd=DB_PASSWORD,  # your password
+            db=DB_DBNAME)        # name of the data base
+        cursor = db.cursor()
+        cursor.execute(query,queryParamList)
+        inserted_id = cursor.lastrowid
+        resultSet = cursor.fetchall()
+        desc = cursor.description
+        if desc:
+            for i in range(len(desc)):
+                columns[desc[i][0]] = i
+        db.commit()
+        cursor.close()
+    except:
+        print("Error in creating/executing query against DB [%s] with params %s " %(query,queryParamList))
+    return (columns,resultSet,inserted_id)
+
+def createStatusEntries(ca_id,new_status_id,spoc,last_called):
+    """
+        qplist.append(ca_id)
+        qplist.append(new_status_id)
+        qplist.append(spoc)
+        qplist.append(last_called)
+    mysql> desc staffing_statuss;
+    +--------------------+-------------+------+-----+---------+----------------+
+    | Field              | Type        | Null | Key | Default | Extra          |
+    +--------------------+-------------+------+-----+---------+----------------+
+    | id                 | int(11)     | NO   | PRI | NULL    | auto_increment |
+    | version            | int(11)     | NO   |     | NULL    |                |
+    | current_status_id  | int(11)     | NO   |     | NULL    |                |
+    | responsiveness     | int(11)     | YES  |     | NULL    |                |
+    | observations       | int(11)     | YES  |     | NULL    |                |
+    | resignation_status | int(11)     | YES  |     | NULL    |                |
+    | decline_reason     | int(11)     | YES  |     | NULL    |                |
+    | comments           | mediumtext  | YES  |     | NULL    |                |
+    | tenant_id          | int(11)     | YES  | MUL | NULL    |                |
+    | candidate_id       | int(11)     | YES  |     | NULL    |                |
+    | created_by         | int(11)     | NO   |     | NULL    |                |
+    | created_on         | datetime    | NO   |     | NULL    |                |
+    | modified_by        | int(11)     | YES  |     | NULL    |                |
+    | modified_on        | datetime    | YES  |     | NULL    |                |
+    | is_deleted         | tinyint(1)  | NO   |     | NULL    |                |
+    | guid               | varchar(40) | NO   |     | NULL    |                |
+    +--------------------+-------------+------+-----+---------+----------------+
+    16 rows in set (0.00 sec)
+    mysql> desc staffing_status_historys;
+    +--------------------+------------+------+-----+---------+----------------+
+    | Field              | Type       | Null | Key | Default | Extra          |
+    +--------------------+------------+------+-----+---------+----------------+
+    | id                 | int(11)    | NO   | PRI | NULL    | auto_increment |
+    | status_id          | int(11)    | YES  |     | NULL    |                |
+    | comments           | mediumtext | YES  |     | NULL    |                |
+    | responsiveness     | int(11)    | YES  |     | NULL    |                |
+    | observations       | int(11)    | YES  |     | NULL    |                |
+    | resignation_status | int(11)    | YES  |     | NULL    |                |
+    | decline_reason     | int(11)    | YES  |     | NULL    |                |
+    | created_by         | int(11)    | NO   |     | NULL    |                |
+    | created_on         | datetime   | NO   |     | NULL    |                |
+    | modified_by        | int(11)    | YES  |     | NULL    |                |
+    | modified_on        | datetime   | YES  |     | NULL    |                |
+    | staffingstatus_id  | int(11)    | YES  | MUL | NULL    |                |
+    +--------------------+------------+------+-----+---------+----------------+
+    12 rows in set (0.00 sec)
+    """
+    create_ss_entry = True
+    create_ssh_entry = True
+    # Get the current status and if its different from the current, create an entry in ss_historys and udpates ss
+    query = "select id ,version, current_status_id from staffing_statuss where tenant_id = %s and candidate_id = %s"
+    qplist = []
+    qplist.append(DB_TENANT_ID)
+    qplist.append(ca_id)
+    ss_id = None
+    version = None
+    resultSet = []
+    colIdx    = {}
+    unused = None
+    (colIdx,resultSet,unused) = int_executeQuery(query,qplist)
+    if len(resultSet) > 0:
+        ss_id = row[colIdx["id"]]
+        print ("SS entry already exists for cand=%s with id =%s"%(ca_id,ss_id))
+        version = row[colIdx["version"]]
+        create_ss_entry = False
+        if row[colIdx["current_status_id"]] == new_status_id:
+            print ("CurrentStatus for cand=%s with id =%s is the same as the new one"%(ca_id,ss_id))
+            create_ssh_entry = False
+    if create_ss_entry == True:
+        query = """insert into staffing_statuss (version,current_status_id,tenant_id,candidate_id,created_by,created_on,is_deleted,guid) "
+                   values(1,%s,%s,%s,%s,%s,%s,%s)"""
+        qplist.append(new_status_id)
+        qplist.append(DB_TENANT_ID)
+        qplist.append(ca_id)
+        qplist.append(spoc)
+        qplist.append(last_called)
+        qplist.append("0")
+        qplist.append(uuid.uuid4())
+        (colIdx,resultSet,ss_id) = int_executeQuery(query,qplist)
+        print ("Inserted SS entry for cand=%s with id =%s"%(ca_id,ss_id))
+    else:
+        query = """ update staffing_statuss set (version,current_status_id,modified_by,modified_on) 
+                    values (%s,%s,%s,%s) where id = %s"""
+        version += 1
+        qplist.append(version)
+        qplist.append(new_status_id)
+        qplist.append(spoc)
+        qplist.append(last_called)
+        qplist.append(ss_id)
+        int_executeQuery(query,qplist)
+        print ("Updated SS entry for id =%s"%(ss_id))
+
+    if create_ssh_entry == True:
+        query = """insert into staffing_status_historys(version,current_status_id,tenant_id,candidate_id,
+                   created_by,created_on,is_deleted,guid) "
+                   values(1,%s,%s,%s,%s,%s,%s,%s)"""
+        qplist.append(version)
+        qplist.append(new_status_id)
+        qplist.append(DB_TENANT_ID)
+        qplist.append(ca_id)
+        qplist.append(spoc)
+        qplist.append(last_called)
+        qplist.append(is_deleted)
+        qplist.append(uuid.uuid4())
+        sshid = None
+        (colIdx,resultSet,sshid) = int_executeQuery(query,qplist)
+        print ("Inserted SSH entry with id =%s"%(sshid))
 
 def insertCandStaffingQueries(csp_id,q_cat,q_criticality,spoc,is_pending,created_on,resolved_on):
     """
@@ -295,6 +425,13 @@ if __name__=="__main__":
                         is_pending,
                         queryDetails['QueryRaisedDate'],
                         queryDetails['QueryResolvedDate'])
+
+        createStatusEntries( 
+                            singleRow['CandidateIdPrimaryKey'],
+                            status_dict[singleRow["JoiningStatus"]],
+                            spocdict[singleRow['spocname']],
+                            singleRow['LastDateCalled']
+                           )
 
     print "Total rows=" + str(len(allRows))
 
