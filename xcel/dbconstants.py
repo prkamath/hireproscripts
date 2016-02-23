@@ -5,7 +5,7 @@ DB_DBNAME="appserver_core"
 DB_TENANT_ID=1375
 SPOC_CREATED_BY=6492
 XCEL_SHEET_NAME="/home/kamath/source/scripts/hireproscripts/xcel/Book3.xlsx"
-MAX_ROWS_TO_PARSE=20
+MAX_ROWS_TO_PARSE=25
 
 SERVICE_URL="http://%s:8000//py/api/v1/bulkimport"
 SERVICE_IP="10.0.5.88"
@@ -42,7 +42,7 @@ template= """{
 }"""
 
 
-def populateMetaData(spocdict,query_cat_dict,query_criticality_dict,status_dict):
+def populateMetaData(spocdict,query_cat_dict,query_criticality_dict, status_dict):
     spocdict['Akanksha']=16049
     spocdict['Soumya']=16050
     spocdict['Riya']=16052
@@ -66,24 +66,28 @@ def populateMetaData(spocdict,query_cat_dict,query_criticality_dict,status_dict)
     query_criticality_dict['Level 1']=36170
     query_criticality_dict['Level 2']=36171
     query_criticality_dict['Level 3']=36172
-    query_criticality_dict['No Query']=None
-    status_dict = {
-        "BGV Yet to Complete / Initiate":"142023",
-        "Yet to Intiate POFU":"142024",
-        "Yet to Intiate POFU":"142025",
-        "Yet to Accept":"142026",
-        "Offer Letter Not Received":"142027",
-        "Offer Accepted & DOJ To Be Confirmed with Queries":"142028",
-        "Offer Accepted & DOJ To Be Confirmed":"142029",
-        "Offer Accepted & DOJ Confirmed with Queries":"142030",
-        "Offer Accepted & DOJ Confirmed":"142031",
-        "Joining Date Elapsed":"142032",
-        "Invalid Contact Details":"142033",
-        "Yet to Initiate POFU":"142034",
-        "Dropped":"142035",
-        "Dropped":"142036",
-        "Declined":"142037",
-        "Declined":"142038",
-        "Joining":"142039",
-        "Joined":"142040",
+    query_criticality_dict['No Query']=1
+    tempDict={
+        "BGV Yet to Complete / Initiate":142023,
+        "Yet to Intiate POFU":142024,
+        "Yet to Intiate POFU":142025,
+        "Yet to Accept":142026,
+        "Offer Letter Not Received":142027,
+        "Offer Accepted & DOJ To Be Confirmed with Queries":142028,
+        "Offer Accepted & DOJ To Be Confirmed":142029,
+        "Offer Accepted & DOJ Confirmed with Queries":142030,
+        "Offer Accepted & DOJ Confirmed":142031,
+        "Joining Date Elapsed":142032,
+        "Invalid Contact Details":142033,
+        "Yet to Initiate POFU":142034,
+        "Dropped":142035,
+        "Dropped":142036,
+        "Declined":142037,
+        "Declined":142038,
+        "Joining":142039,
+        "Joined":142040,
+        "Offer Declined":142012#TODO
     }
+    for val in tempDict.keys():
+        status_dict[val.lower()]=tempDict[val]
+    print status_dict

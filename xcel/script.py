@@ -260,6 +260,7 @@ def createStatusEntries(ca_id,new_status_id,spoc,last_called):
     resultSet = []
     colIdx    = {}
     unused = None
+    is_deleted=0
     (colIdx,resultSet,unused) = int_executeQuery(query,qplist)
     if len(resultSet) > 0:
         ss_id = row[colIdx["id"]]
@@ -384,7 +385,8 @@ if __name__=="__main__":
     spocdict={}
     query_cat_dict={}
     query_criticality_dict={}
-    populateMetaData(spocdict,query_cat_dict,query_criticality_dict)
+    status_dict={}
+    populateMetaData(spocdict,query_cat_dict,query_criticality_dict,status_dict)
 
     count=0
     for row in ws.iter_rows(row_offset=1):
@@ -428,7 +430,7 @@ if __name__=="__main__":
 
         createStatusEntries( 
                             singleRow['CandidateIdPrimaryKey'],
-                            status_dict[singleRow["JoiningStatus"]],
+                            status_dict[singleRow["JoiningStatus"].lower()],
                             spocdict[singleRow['spocname']],
                             singleRow['LastDateCalled']
                            )
