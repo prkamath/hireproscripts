@@ -2,6 +2,7 @@ from dbconstants import *
 import MySQLdb
 from openpyxl import load_workbook
 from datetime import datetime
+import uuid
 
 def checkForCandidates(candidatelist):
     db = MySQLdb.connect(host=DB_IP,    # your host, usually localhost
@@ -122,6 +123,22 @@ def getCandidateStaffingProfileId(email):
     db.close()
     return candId
 
+def getCandidateId(email):
+    db = MySQLdb.connect(host=DB_IP,    # your host, usually localhost
+            user=DB_USER,         # your username
+            passwd=DB_PASSWORD,  # your password
+            db=DB_DBNAME)        # name of the data base
+    cur = db.cursor()
+
+    tempString="select id from candidates where email1='%s'"%email
+    cur.execute(tempString)
+    row=cur.fetchone()
+    if (row == None):
+        return -1
+    candId=row[0]
+    db.close()
+    return candId
+
 def createCandSpocs(candidateid,spocName,spocDict):
     db = MySQLdb.connect(host=DB_IP,    # your host, usually localhost
             user=DB_USER,         # your username
@@ -129,7 +146,7 @@ def createCandSpocs(candidateid,spocName,spocDict):
             db=DB_DBNAME)        # name of the data base
     cur = db.cursor()
     guidval=uuid.uuid4()
-    tempstring="insert into candidate_spocs (candidate_id,user_id,guid,is_deleted,created_on,created_by) values (%d,%d,%s,0,now(),%d)"\
+    tempstring="insert into candidate_spocs (version,candidate_id,user_id,guid,is_deleted,created_on,created_by) values (0,%d,%d,'%s',0,now(),%d)"\
                %(candidateid,spocDict[spocName],guidval,SPOC_CREATED_BY)
     print tempstring
     cur.execute(tempstring)
@@ -190,7 +207,12 @@ def insertCandStaffingQueries(csp_id,q_cat,q_criticality,spoc,is_pending,created
     cur.execute(query,q_paramlist)
     db.commit()
     db.close()
-    
+
+def createCandidates(allRows):
+    for row in allRows:
+        print x
+
+
 
 if __name__=="__main__":
     #candId=getCandidateStaffingProfileId("prkamath@gmail.com")
@@ -212,9 +234,12 @@ if __name__=="__main__":
     for row in ws.iter_rows(row_offset=1):
         singleRow={}
         ret=parseRowIntoDict(row,singleRow)
-        singleRow['candidatestaffingprofileid']= getCandidateStaffingProfileId(singleRow['EmailId'])
-        if (0 == ret):
+        if (0==ret) and ('EmailId' in singleRow):
+            singleRow['candidatestaffingprofileid']= getCandidateStaffingProfileId(singleRow['EmailId'])
+            singleRow['CandidateIdPrimaryKey']=getCandidateId(singleRow['EmailId'])
             allRows.append(singleRow)
+        else:
+            print singleRow
 
     #Log the stuff
     count=0
@@ -227,10 +252,13 @@ if __name__=="__main__":
 
     #Now update the DOJ for all entries
     for singleRow in allRows:
+        if (singleRow['CandidateIdPrimaryKey'] == -1):
+            continue
         updateCandidateStaffingProfile(singleRow['candidatestaffingprofileid'],singleRow['ExpectedDOJ'])
-        createCandSpocs(singleRow['CandidateId'],singleRow['spocname'],spocdict)
+        createCandSpocs(singleRow['CandidateIdPrimaryKey'],singleRow['spocname'],spocdict)
         is_pending = 0
-        insertCandStaffingQueries(singleRow['candidatestaffingprofileid'],
+        if 'QueryType' in singleRow:
+            insertCandStaffingQueries(singleRow['candidatestaffingprofileid'],
                         query_cat_dict[singleRow['QueryType']],
                         query_criticality_dict[singleRow['QueryLevelRaised']],
                         spocdict[singleRow['spocname']],
