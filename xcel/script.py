@@ -274,7 +274,7 @@ def createStatusEntries(ca_id,new_status_id,spoc,last_called):
             print ("CurrentStatus for cand=%s with id =%s is the same as the new one"%(ca_id,ss_id))
             create_ssh_entry = False
     if create_ss_entry == True:
-        query = """insert into staffing_statuss (version,current_status_id,tenant_id,candidate_id,created_by,created_on,is_deleted,guid) "
+        query = """insert into staffing_statuss (version,current_status_id,tenant_id,candidate_id,created_by,created_on,is_deleted,guid) 
                    values(%s,%s,%s,%s,%s,%s,%s,%s)"""
         qplist = []
         qplist.append("1")
@@ -288,8 +288,7 @@ def createStatusEntries(ca_id,new_status_id,spoc,last_called):
         (colIdx,resultSet,ss_id) = int_executeQuery(query,qplist)
         print ("Inserted SS entry for cand=%s with id =%s"%(ca_id,ss_id))
     else:
-        query = """ update staffing_statuss set (version,current_status_id,modified_by,modified_on) 
-                    values (%s,%s,%s,%s) where id = %s"""
+        query = """ update staffing_statuss set version = %s,current_status_id=%s,modified_by=%s,modified_on=%s where id = %s"""
         version += 1
         qplist = []
         qplist.append(version)
@@ -312,7 +311,6 @@ def createStatusEntries(ca_id,new_status_id,spoc,last_called):
         sshid = None
         (colIdx,resultSet,sshid) = int_executeQuery(query,qplist)
         print ("Inserted SSH entry with id =%s"%(sshid))
-
 def insertCandStaffingQueries(csp_id,q_cat,q_criticality,spoc,is_pending,created_on,resolved_on):
     """
     +------------------------+----------+------+-----+---------+----------------+
