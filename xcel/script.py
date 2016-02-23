@@ -197,8 +197,10 @@ def int_executeQuery(query,queryParamList):
                 columns[desc[i][0]] = i
         db.commit()
         cursor.close()
-    except:
-        print("Error in creating/executing query against DB [%s] with params %s " %(query,queryParamList))
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+	print("Error in creating/executing query against DB [%s] with params %s [%s:%s:%s]" %(query,queryParamList,fname,exc_tb.tb_lineno,str(e)))
     return (columns,resultSet,inserted_id)
 
 def createStatusEntries(ca_id,new_status_id,spoc,last_called):
@@ -272,14 +274,15 @@ def createStatusEntries(ca_id,new_status_id,spoc,last_called):
             create_ssh_entry = False
     if create_ss_entry == True:
         query = """insert into staffing_statuss (version,current_status_id,tenant_id,candidate_id,created_by,created_on,is_deleted,guid) "
-                   values(1,%s,%s,%s,%s,%s,%s,%s)"""
+                   values(%s,%s,%s,%s,%s,%s,%s,%s)"""
+        qplist.append("1")
         qplist.append(new_status_id)
         qplist.append(DB_TENANT_ID)
         qplist.append(ca_id)
         qplist.append(spoc)
         qplist.append(last_called)
         qplist.append("0")
-        qplist.append(uuid.uuid4())
+        qplist.append(str(uuid.uuid4()))
         (colIdx,resultSet,ss_id) = int_executeQuery(query,qplist)
         print ("Inserted SS entry for cand=%s with id =%s"%(ca_id,ss_id))
     else:
