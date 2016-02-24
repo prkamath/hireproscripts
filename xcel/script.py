@@ -66,8 +66,8 @@ def makeSenseOfDate(inDate):
 
 def morphRows(allRows):
     for singleRow in allRows:
-        singleRow['EmailId']="%s%d"%(singleRow['EmailId'],random.randint(1,200))
-        singleRow['CandidateId']=singleRow['CandidateId']+random.randint(1,100)
+        singleRow['EmailId']="%s%d"%(singleRow['EmailId'],random.randint(1,20000))
+        singleRow['CandidateId']=singleRow['CandidateId']+random.randint(1,10000)
 
 def parseRowIntoDict(row,singleRow):
     if (row[0].value==None):

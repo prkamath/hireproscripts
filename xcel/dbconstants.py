@@ -10,7 +10,7 @@ MAX_ROWS_TO_PARSE=25
 
 SERVICE_URL="http://%s:8000//py/api/v1/bulkimport"
 SERVICE_IP="10.0.5.88"
-AUTH_TOKEN='86af4a75-1662-46b9-940e-5e1531eaf928'
+AUTH_TOKEN='430b2785-dbae-4faa-828c-fb45212b2269'
 
 template= """{
   "type": "offerImport",
