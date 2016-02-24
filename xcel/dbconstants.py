@@ -1,10 +1,14 @@
 DB_IP="10.0.5.88"
 DB_USER="ashish"
+#DB_IP="127.0.0.1"
+#DB_USER="appserver"
 DB_PASSWORD="data"
 DB_DBNAME="appserver_core"
 #DB_TENANT_ID=1375
 DB_TENANT_ID=586
 SPOC_CREATED_BY=6492
+OUTBOUND_CALL = 16505 #call_type -> id from catalog_values where value = "OutBoundCall" and tenant_id = 1	
+COMPLETED_CALL = 16512 # id from ccatalog_values where value = "Completed" and tenant_id = 1
 XCEL_SHEET_NAME="/home/kamath/source/scripts/hireproscripts/xcel/Book3.xlsx"
 MAX_ROWS_TO_PARSE=25
 
