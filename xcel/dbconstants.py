@@ -9,12 +9,12 @@ DB_TENANT_ID=586
 SPOC_CREATED_BY=6492
 OUTBOUND_CALL = 16505 #call_type -> id from catalog_values where value = "OutBoundCall" and tenant_id = 1	
 COMPLETED_CALL = 16512 # id from ccatalog_values where value = "Completed" and tenant_id = 1
-XCEL_SHEET_NAME="/home/kamath/source/scripts/hireproscripts/xcel/Book3.xlsx"
+XCEL_SHEET_NAME="/home/kamath/source/scripts/hireproscripts/xcel/NewBook.xlsx"
 MAX_ROWS_TO_PARSE=25
 
 SERVICE_URL="http://%s:8000//py/api/v1/bulkimport"
 SERVICE_IP="10.0.5.88"
-AUTH_TOKEN='430b2785-dbae-4faa-828c-fb45212b2269'
+AUTH_TOKEN='cafba07c-9a35-4ddf-8171-79c0e2911810'
 
 template= """{
   "type": "offerImport",

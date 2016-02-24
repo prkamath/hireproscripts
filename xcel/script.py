@@ -32,7 +32,8 @@ def checkForCandidates(candidatelist):
             print "Unable to fetch record for " + emailid
     print "Total fetched candidates are " + str(totalexistingcandidates) 
     db.close()
-def parseCallStatusDetails(stringVal,callStatusDetails)
+
+def parseCallStatusDetails(stringVal,callStatusDetails):
     allDetails=stringVal.splitlines()
     for detail in allDetails:
         detail=detail.encode("utf-8")
@@ -94,10 +95,10 @@ def parseRowIntoDict(row,singleRow):
         return -1
     singleRow['CandidateId']=row[0].value
     singleRow['EmailId']=row[3].value
-    singleRow['ExpectedDOJ']=row[14].value
+    singleRow['ExpectedDOJ']=row[13].value
     singleRow['Name']=row[1].value
     singleRow['LastDateCalled']=row[15].value
-    singleRow['Action']=row[14].value
+    singleRow['Action']=row[17].value
     singleRow['Inconsistencies']=[]
     singleRow['spocname']=row[30].value
     tempQueryDetails={}
