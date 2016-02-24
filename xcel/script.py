@@ -92,28 +92,39 @@ def morphRows(allRows):
 def parseRowIntoDict(row,singleRow):
     if (row[0].value==None):
         return -1
-    singleRow['CandidateId']=row[0].value
+    singleRow['CandidateId']=row[0].value#Candidate Id
+    singleRow['Name']=row[1].value #Candidate Full Name
+    singleRow['Mobile1']=row[2].value #Candidate Mobile Phone
     singleRow['EmailId']=row[3].value
+    singleRow['Level']=row[4].value # Level
+    singleRow['BU']=row[5].value # BU
+    singleRow['OwningDepartment']=row[6].value # Owning Department
+    singleRow['ActualWorkLocation']=row[7].value # Actual Work Location (City) 
+    singleRow['PrimaryRecruiterName']=row[8].value #Primary Recruiter Name
+    singleRow['PrimarySkills']=row[9].value #Primary Skills
+    singleRow['TentativeDOJ']=row[11].value #C Hire Date
     singleRow['ExpectedDOJ']=row[14].value
-    singleRow['Name']=row[1].value
     singleRow['LastDateCalled']=row[15].value
-    singleRow['Action']=row[14].value
+    singleRow['Action']=row[17].value
     singleRow['Inconsistencies']=[]
-    singleRow['spocname']=row[30].value
+    singleRow['DeclinedReason']=row[28].value# Declined Reason
+    singleRow['spocname']=row[30].value# POFU SPOC
     tempQueryDetails={}
     singleRow['QueryDetails']=tempQueryDetails
     try:
-        tempQueryDetails['QueryLevelRaised']=row[18].value
-        tempQueryDetails['QueryType']=row[19].value
-        tempQueryDetails['QueryRaisedDate']=row[20].value
-        tempQueryDetails['QueryResolvedDate']=row[21].value
-
-        gap=tempQueryDetails['QueryResolvedDate']-tempQueryDetails['QueryRaisedDate']
-        tempQueryDetails['NoOfDaysForQueryResolution']=gap.days
+        q_type = row[19].value
+        if q_type != 'NA' and q_type != '':
+            tempQueryDetails['QueryLevelRaised']=row[18].value
+            tempQueryDetails['QueryType'] = q_type
+            tempQueryDetails['QueryRaisedDate']=row[20].value
+            tempQueryDetails['QueryResolvedDate']=row[21].value
+            tempQueryDetails['QueryRemarks']=row[24].value
+            #gap=tempQueryDetails['QueryResolvedDate']-tempQueryDetails['QueryRaisedDate']
+            #tempQueryDetails['NoOfDaysForQueryResolution']=gap.days
     except:
         singleRow['Inconsistencies'].append("DateTimeError")
 
-    singleRow['JoiningStatus']=row[26].value#Status as per last call
+    singleRow['JoiningStatus']=row[26].value#Status As Per Last Call
     callStatusDetails=[]
     singleRow['CallStatus']=callStatusDetails
     singleRow['AllCallDetails']=row[27].value#Remarks
@@ -132,6 +143,7 @@ def getCandidateStaffingProfileId(email):
     cur.execute(tempString)
     row=cur.fetchone()
     if (row == None):
+        print "Unable to get CSP_ID!! for %s"%email
         return -1
     candId=row[0]
     db.close()
@@ -148,6 +160,7 @@ def getCandidateId(email):
     cur.execute(tempString)
     row=cur.fetchone()
     if (row == None):
+        print "Unable to get CA_ID!! for %s"%email
         return -1
     candId=row[0]
     db.close()
@@ -352,7 +365,7 @@ def createStatusEntries(ca_id,new_status_id,spoc,last_called):
         sshid = None
         (colIdx,resultSet,sshid) = int_executeQuery(query,qplist)
         print ("Inserted SSH entry with id =%s"%(sshid))
-def insertCandStaffingQueries(csp_id,q_cat,q_criticality,spoc,is_pending,created_on,resolved_on):
+def insertCandStaffingQueries(csp_id,q_cat,q_criticality,spoc,created_on,resolved_on,q_details):
     """
     +------------------------+----------+------+-----+---------+----------------+
     | Field                  | Type     | Null | Key | Default | Extra          |
@@ -377,7 +390,7 @@ def insertCandStaffingQueries(csp_id,q_cat,q_criticality,spoc,is_pending,created
     cur = db.cursor()
     query = """ insert into cand_staffing_querys (tenant_id,created_by,created_on,modified_by,modified_on,
                 is_pending,candstaffingprofile_id, 
-                querycategory_id, querycriticality_id) values(%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
+                querycategory_id, querycriticality_id,query_details) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
     q_paramlist = []
     q_paramlist.append(DB_TENANT_ID)
     q_paramlist.append(spoc)
@@ -388,6 +401,7 @@ def insertCandStaffingQueries(csp_id,q_cat,q_criticality,spoc,is_pending,created
     q_paramlist.append(csp_id)
     q_paramlist.append(q_cat)
     q_paramlist.append(q_criticality)
+    q_paramlist.append(q_details)
     cur.execute(query,q_paramlist)
     db.commit()
     db.close()
@@ -462,14 +476,19 @@ if __name__=="__main__":
         is_pending = 0
         queryDetails=singleRow['QueryDetails']
         if 'QueryType' in queryDetails:
+            query_resolved_on = queryDetails['QueryResolvedDate']
+            if queryDetails['QueryResolvedDate'] == '30/12/1899' or queryDetails['QueryResolvedDate'] == '30/12/1999':
+                is_pending = 1
+                query_resolved_on = None
+            
             insertCandStaffingQueries(singleRow['candidatestaffingprofileid'],
                         query_cat_dict[queryDetails['QueryType']],
                         query_criticality_dict[queryDetails['QueryLevelRaised']],
                         spocdict[singleRow['spocname']],
                         is_pending,
                         queryDetails['QueryRaisedDate'],
-                        queryDetails['QueryResolvedDate'])
-
+                        query_resolved_on
+                        )
         createStatusEntries( 
                             singleRow['CandidateIdPrimaryKey'],
                             status_dict[singleRow["JoiningStatus"].lower()],
