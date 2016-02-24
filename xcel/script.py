@@ -32,6 +32,26 @@ def checkForCandidates(candidatelist):
             print "Unable to fetch record for " + emailid
     print "Total fetched candidates are " + str(totalexistingcandidates) 
     db.close()
+def parseCallStatusDetails(stringVal,callStatusDetails)
+    allDetails=stringVal.splitlines()
+    for detail in allDetails:
+        detail=detail.encode("utf-8")
+        detail=detail.replace('\xe2\x80\x93','-')
+        detail=detail.replace(':','-')
+        commentDate=detail.split("-")[0]
+        print commentDate
+        newcommentDate=makeSenseOfDate(commentDate)
+        print newcommentDate
+        newcommentDate=newcommentDate.replace("th","")
+        try:
+            finalDate=datetime.strptime(newcommentDate,"%d %b %Y")
+        except:
+            continue
+
+        singleConvrsn={}
+        singleConvrsn['date']=finalDate
+        singleConvrsn['comment']=detail.split("-")[1]
+        callStatusDetails.append(singleConvrsn)
 
 def checkForUsers(userlist):
     db = MySQLdb.connect(host=DB_IP,    # your host, usually localhost
@@ -74,49 +94,32 @@ def parseRowIntoDict(row,singleRow):
         return -1
     singleRow['CandidateId']=row[0].value
     singleRow['EmailId']=row[3].value
-    singleRow['ExpectedDOJ']=row[12].value
+    singleRow['ExpectedDOJ']=row[14].value
     singleRow['Name']=row[1].value
-    singleRow['LastDateCalled']=row[13].value
+    singleRow['LastDateCalled']=row[15].value
     singleRow['Action']=row[14].value
     singleRow['Inconsistencies']=[]
-    singleRow['spocname']=row[25].value
+    singleRow['spocname']=row[30].value
     tempQueryDetails={}
     singleRow['QueryDetails']=tempQueryDetails
     try:
-        tempQueryDetails['QueryLevelRaised']=row[15].value
-        tempQueryDetails['QueryType']=row[16].value
-        tempQueryDetails['QueryRaisedDate']=row[17].value
-        tempQueryDetails['QueryResolvedDate']=row[18].value
+        tempQueryDetails['QueryLevelRaised']=row[18].value
+        tempQueryDetails['QueryType']=row[19].value
+        tempQueryDetails['QueryRaisedDate']=row[20].value
+        tempQueryDetails['QueryResolvedDate']=row[21].value
 
         gap=tempQueryDetails['QueryResolvedDate']-tempQueryDetails['QueryRaisedDate']
         tempQueryDetails['NoOfDaysForQueryResolution']=gap.days
     except:
         singleRow['Inconsistencies'].append("DateTimeError")
 
-    singleRow['JoiningStatus']=row[21].value
+    singleRow['JoiningStatus']=row[26].value#Status as per last call
     callStatusDetails=[]
     singleRow['CallStatus']=callStatusDetails
-    allDetails=row[22].value.splitlines()
-    for detail in allDetails:
-        detail=detail.encode("utf-8")
-        detail=detail.replace('\xe2\x80\x93','-')
-        detail=detail.replace(':','-')
-        commentDate=detail.split("-")[0]
-        print commentDate
-        newcommentDate=makeSenseOfDate(commentDate)
-        print newcommentDate
-        newcommentDate=newcommentDate.replace("th","")
-        try:
-            finalDate=datetime.strptime(newcommentDate,"%d %b %Y")
-        except:
-            continue
-
-        singleConvrsn={}
-        singleConvrsn['date']=finalDate
-        singleConvrsn['comment']=detail.split("-")[1]
-        callStatusDetails.append(singleConvrsn)
-
+    singleRow['AllCallDetails']=row[27].value#Remarks
+    parseCallStatusDetails(row[27].value,callStatusDetails)
     return 0
+
 
 def getCandidateStaffingProfileId(email):
     db = MySQLdb.connect(host=DB_IP,    # your host, usually localhost
@@ -478,7 +481,7 @@ if __name__=="__main__":
                       singleRow['CandidateIdPrimaryKey'],
                       spocdict[singleRow['spocname']],
                       singleRow['LastDateCalled'],
-                      remarks)
+                      singleRow['AllCallDetails'])
 
     print "Total rows=" + str(len(allRows))
 
