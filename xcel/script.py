@@ -8,6 +8,7 @@ import requests
 import random
 import copy
 import sys,os
+import traceback
 
 def checkForCandidates(candidatelist):
     db = MySQLdb.connect(host=DB_IP,    # your host, usually localhost
@@ -119,17 +120,19 @@ def parseRowIntoDict(row,singleRow):
             tempQueryDetails['QueryType'] = q_type
             tempQueryDetails['QueryRaisedDate']=row[20].value
             tempQueryDetails['QueryResolvedDate']=row[21].value
-            tempQueryDetails['QueryRemarks']=row[24].value
+            tempQueryRemarks=row[24].value#Query Remarks
+            tempQueryDetails['QueryRemarks']=tempQueryRemarks
             #gap=tempQueryDetails['QueryResolvedDate']-tempQueryDetails['QueryRaisedDate']
             #tempQueryDetails['NoOfDaysForQueryResolution']=gap.days
     except:
         singleRow['Inconsistencies'].append("DateTimeError")
 
     singleRow['JoiningStatus']=row[26].value#Status As Per Last Call
+
     callStatusDetails=[]
     singleRow['CallStatus']=callStatusDetails
     singleRow['AllCallDetails']=row[27].value#Remarks
-    parseCallStatusDetails(row[27].value,callStatusDetails)
+    #parseCallStatusDetails(row[27].value,callStatusDetails)
     return 0
 
 
@@ -176,7 +179,8 @@ def createCandSpocs(candidateid,spocName,spocDict):
     guidval=uuid.uuid4()
     tempstring="insert into candidate_spocs (version,candidate_id,user_id,guid,is_deleted,created_on,created_by) values (0,%d,%d,'%s',0,now(),%d)"\
                %(candidateid,spocDict[spocName],guidval,SPOC_CREATED_BY)
-    print tempstring
+    if VERBOSE_DEBUG_SETTING:
+        print tempstring
     cur.execute(tempstring)
     db.commit()
     db.close()
@@ -191,7 +195,8 @@ def updateCandidateStaffingProfile(staffingProfileId,expectedDateOfJoining):
     dateOfJ=expectedDateOfJoining.strftime('%Y-%m-%d')
     print dateOfJ
     tempString="update candidate_staffing_profiles set expected_joining_date='%s' where id=%d"%(dateOfJ,staffingProfileId)
-    print tempString
+    if VERBOSE_DEBUG_SETTING:
+        print tempString
     cur.execute(tempString)
     db.commit()
     db.close()
@@ -234,7 +239,8 @@ def createCallData(ca_id,spoc,created_on,remarks):
     qplist.append("0")
     qplist.append(str(uuid.uuid4()))
     (colIdx,resultSet,sp_id) = int_executeQuery(query,qplist)
-    print ("Inserted SP entry for cand=%s with id =%s"%(ca_id,sp_id))
+    if VERBOSE_DEBUG_SETTING:
+        print ("Inserted SP entry for cand=%s with id =%s"%(ca_id,sp_id))
 
     query = """insert into staffing_pofu_calls (caller, call_type,current_status_id,created_by,created_on,staffingpofu_id)
              values (%s,%s,%s,%s,%s,%s)"""
@@ -246,7 +252,8 @@ def createCallData(ca_id,spoc,created_on,remarks):
     qplist.append(str(created_on))
     qplist.append(sp_id)
     (colIdx,resultSet,spc_id) = int_executeQuery(query,qplist)
-    print ("Inserted SPC entry for cand=%s with id =%s"%(ca_id,spc_id))
+    if VERBOSE_DEBUG_SETTING:
+        print ("Inserted SPC entry for cand=%s with id =%s"%(ca_id,spc_id))
     query = """insert into staffing_pofu_call_historys (status_id,comment,created_by,created_on,staffingpofucall_id) 
                values(%s,%s,%s,%s,%s)
             """
@@ -257,7 +264,8 @@ def createCallData(ca_id,spoc,created_on,remarks):
     qplist.append(str(created_on))
     qplist.append(spc_id)
     (colIdx,resultSet,spch_id) = int_executeQuery(query,qplist)
-    print ("Inserted SPCH entry for cand=%s with id =%s"%(ca_id,spch_id))
+    if VERBOSE_DEBUG_SETTING:
+        print ("Inserted SPCH entry for cand=%s with id =%s"%(ca_id,spch_id))
 
 def createStatusEntries(ca_id,new_status_id,spoc,last_called):
     """
@@ -322,7 +330,8 @@ def createStatusEntries(ca_id,new_status_id,spoc,last_called):
     (colIdx,resultSet,unused) = int_executeQuery(query,qplist)
     if len(resultSet) > 0:
         ss_id = resultSet[0][colIdx["id"]]
-        print ("SS entry already exists for cand=%s with id =%s"%(ca_id,ss_id))
+        if VERBOSE_DEBUG_SETTING:
+            print ("SS entry already exists for cand=%s with id =%s"%(ca_id,ss_id))
         version = resultSet[0][colIdx["version"]]
         create_ss_entry = False
         if resultSet[0][colIdx["current_status_id"]] == new_status_id:
@@ -341,7 +350,8 @@ def createStatusEntries(ca_id,new_status_id,spoc,last_called):
         qplist.append("0")
         qplist.append(str(uuid.uuid4()))
         (colIdx,resultSet,ss_id) = int_executeQuery(query,qplist)
-        print ("Inserted SS entry for cand=%s with id =%s"%(ca_id,ss_id))
+        if VERBOSE_DEBUG_SETTING:
+            print ("Inserted SS entry for cand=%s with id =%s"%(ca_id,ss_id))
     else:
         query = """ update staffing_statuss set version = %s,current_status_id=%s,modified_by=%s,modified_on=%s where id = %s"""
         version += 1
@@ -352,7 +362,8 @@ def createStatusEntries(ca_id,new_status_id,spoc,last_called):
         qplist.append(str(last_called))
         qplist.append(ss_id)
         int_executeQuery(query,qplist)
-        print ("Updated SS entry for id =%s"%(ss_id))
+        if VERBOSE_DEBUG_SETTING:
+            print ("Updated SS entry for id =%s"%(ss_id))
 
     if create_ssh_entry == True:
         query = """insert into staffing_status_historys(status_id,
@@ -365,8 +376,10 @@ def createStatusEntries(ca_id,new_status_id,spoc,last_called):
         qplist.append(ss_id)
         sshid = None
         (colIdx,resultSet,sshid) = int_executeQuery(query,qplist)
-        print ("Inserted SSH entry with id =%s"%(sshid))
-def insertCandStaffingQueries(csp_id,q_cat,q_criticality,spoc,created_on,resolved_on,q_details):
+        if VERBOSE_DEBUG_SETTING:
+            print ("Inserted SSH entry with id =%s"%(sshid))
+
+def insertCandStaffingQueries(csp_id,q_cat,q_criticality,spoc,created_on,resolved_on,q_details,is_pending):
     """
     +------------------------+----------+------+-----+---------+----------------+
     | Field                  | Type     | Null | Key | Default | Extra          |
@@ -403,6 +416,9 @@ def insertCandStaffingQueries(csp_id,q_cat,q_criticality,spoc,created_on,resolve
     q_paramlist.append(q_cat)
     q_paramlist.append(q_criticality)
     q_paramlist.append(q_details)
+    if VERBOSE_DEBUG_SETTING:
+        print query
+        print q_paramlist
     cur.execute(query,q_paramlist)
     db.commit()
     db.close()
@@ -430,6 +446,37 @@ def createCandidates(allRows):
     ret=requests.post(url=serviceUrl,data=jsonStr,headers=headers)
     print ret.text
 
+def checkSanityOfDicts(singleRow,spocdict,query_cat_dict,query_criticality_dict,status_dict):
+
+    spocname=singleRow["spocname"]
+    if (spocname  not in spocdict):
+        print "####Missing spocname" + spocname
+        raise ValueError('A very specific bad thing happened')
+
+    if 'QueryType' in singleRow['QueryDetails']:
+        querytype=singleRow['QueryDetails']['QueryType']
+        if (querytype not in query_cat_dict):
+            print "#####Missing query category#####"
+            raise ValueError('A very specific bad thing happened')
+
+    joiningstatus=singleRow["JoiningStatus"]
+    if (joiningstatus.lower() not in status_dict):
+        print "#####Missing query category#####"
+        raise ValueError('A very specific bad thing happened')
+
+def createAllCandidates(allRows):
+    #MorphRows changes all the rows' emailId and candidateId
+    morphRows(allRows)
+    tempRows=[]
+    #Create the candidates also
+    for row in allRows:
+        tempRows.append(row)
+        if (len(tempRows)==MAX_ROWS_TO_CREATE):
+            createCandidates(tempRows)
+            tempRows=[]
+
+    createCandidates(tempRows)
+
 if __name__=="__main__":
     #candId=getCandidateStaffingProfileId("prkamath@gmail.com")
     #updateCandidateStaffingProfile(candId,datetime(2016, 1, 28, 0, 0))
@@ -449,16 +496,16 @@ if __name__=="__main__":
     for row in ws.iter_rows(row_offset=1):
         singleRow={}
         ret=parseRowIntoDict(row,singleRow)
-        if (0==ret) and (count<=MAX_ROWS_TO_PARSE) and ('EmailId' in singleRow):
+        if (0==ret) and (count in range(START_ROW_TO_PARSE,START_ROW_TO_PARSE+MAX_ROWS_TO_PARSE)) and ('EmailId' in singleRow):
             allRows.append(singleRow)
+        if (0==ret):
+            checkSanityOfDicts(singleRow,spocdict,query_cat_dict,query_criticality_dict,status_dict)
         count = count+1
 
 
     #Here we ensure uniqueness of the createdCandidates. This and the next line is purely for debuggin
     #When actually using we know that the candidates would have already been created
-    morphRows(allRows)
-    #Create the candidates also
-    createCandidates(allRows)
+    createAllCandidates(allRows)
 
     #Load all remaining pieces
     for singleRow in allRows:
@@ -470,38 +517,48 @@ if __name__=="__main__":
     for singleRow in allRows:
         if (singleRow['CandidateIdPrimaryKey'] == -1):
             continue
+        print singleRow
+        try:
+            #Now update the DOJ for all entries
+            updateCandidateStaffingProfile(singleRow['candidatestaffingprofileid'],singleRow['ExpectedDOJ'])
+            createCandSpocs(singleRow['CandidateIdPrimaryKey'],singleRow['spocname'],spocdict)
+            is_pending = 0
+            queryDetails=singleRow['QueryDetails']
 
-        #Now update the DOJ for all entries
-        updateCandidateStaffingProfile(singleRow['candidatestaffingprofileid'],singleRow['ExpectedDOJ'])
-        createCandSpocs(singleRow['CandidateIdPrimaryKey'],singleRow['spocname'],spocdict)
-        is_pending = 0
-        queryDetails=singleRow['QueryDetails']
-        if 'QueryType' in queryDetails:
-            query_resolved_on = queryDetails['QueryResolvedDate']
-            if queryDetails['QueryResolvedDate'] == '30/12/1899' or queryDetails['QueryResolvedDate'] == '30/12/1999':
-                is_pending = 1
-                query_resolved_on = None
+            if 'QueryType' in queryDetails:
+                query_resolved_on = queryDetails['QueryResolvedDate']
+                invalidDate=datetime(1899, 12, 30, 0, 0)
+                if queryDetails['QueryResolvedDate'] == invalidDate :
+                    is_pending = 1
+                    query_resolved_on = None
             
-            insertCandStaffingQueries(singleRow['candidatestaffingprofileid'],
-                        query_cat_dict[queryDetails['QueryType']],
-                        query_criticality_dict[queryDetails['QueryLevelRaised']],
-                        spocdict[singleRow['spocname']],
-                        is_pending,
-                        queryDetails['QueryRaisedDate'],
-                        query_resolved_on
-                        )
-        createStatusEntries( 
-                            singleRow['CandidateIdPrimaryKey'],
-                            status_dict[singleRow["JoiningStatus"].lower()],
+                #insertCandStaffingQueries(csp_id,q_cat,q_criticality,spoc,created_on,resolved_on,q_details,is_pending):
+                insertCandStaffingQueries(singleRow['candidatestaffingprofileid'],
+                            query_cat_dict[queryDetails['QueryType']],
+                            query_criticality_dict[queryDetails['QueryLevelRaised']],
                             spocdict[singleRow['spocname']],
-                            singleRow['LastDateCalled']
-                           )
-        #NAVEENA remarks need to be filled!!
-        createCallData(
-                      singleRow['CandidateIdPrimaryKey'],
-                      spocdict[singleRow['spocname']],
-                      singleRow['LastDateCalled'],
-                      singleRow['AllCallDetails'])
+                            queryDetails['QueryRaisedDate'],
+                            query_resolved_on,
+                            queryDetails['QueryRemarks'],
+                            is_pending
+                            )
+            createStatusEntries(
+                                singleRow['CandidateIdPrimaryKey'],
+                                status_dict[singleRow["JoiningStatus"].lower()],
+                                spocdict[singleRow['spocname']],
+                                singleRow['LastDateCalled']
+                            )
+            #NAVEENA remarks need to be filled!!
+            createCallData(
+                        singleRow['CandidateIdPrimaryKey'],
+                        spocdict[singleRow['spocname']],
+                        singleRow['LastDateCalled'],
+                        singleRow['AllCallDetails'])
+
+        except:
+            tb = traceback.format_exc()
+            print tb
+
 
     print "Total rows=" + str(len(allRows))
 

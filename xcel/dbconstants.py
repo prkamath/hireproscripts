@@ -10,7 +10,10 @@ SPOC_CREATED_BY=6492
 OUTBOUND_CALL = 16505 #call_type -> id from catalog_values where value = "OutBoundCall" and tenant_id = 1	
 COMPLETED_CALL = 16512 # id from ccatalog_values where value = "Completed" and tenant_id = 1
 XCEL_SHEET_NAME="/home/kamath/source/scripts/hireproscripts/xcel/NewBook.xlsx"
-MAX_ROWS_TO_PARSE=25
+START_ROW_TO_PARSE=120
+MAX_ROWS_TO_PARSE=10
+MAX_ROWS_TO_CREATE=25
+VERBOSE_DEBUG_SETTING=0
 
 SERVICE_URL="http://%s:8000//py/api/v1/bulkimport"
 SERVICE_IP="10.0.5.88"
@@ -48,10 +51,12 @@ template= """{
 
 
 def populateMetaData(spocdict,query_cat_dict,query_criticality_dict, status_dict):
-    spocdict['Akanksha']=16049
-    spocdict['Soumya']=16050
-    spocdict['Riya']=16052
-    spocdict['Dhivya']=16053
+    spocdict['Akanksha']=16366
+    spocdict['Soumya']=16365
+    spocdict['Riya']=16367
+    spocdict['Dhivya']=16368
+    spocdict['Bhanu']=16364
+    spocdict['Dilna']=16369
 
     query_cat_dict["CTC Revisions"]=36161
     query_cat_dict["Joining bonus"]=36157
@@ -84,6 +89,7 @@ def populateMetaData(spocdict,query_cat_dict,query_criticality_dict, status_dict
         "Offer Accepted & DOJ Confirmed":142031,
         "Joining Date Elapsed":142032,
         "Invalid Contact Details":142033,
+        "Invalid Contact Details / Out of India":142033,
         "Yet to Initiate POFU":142034,
         "Dropped":142035,
         "Dropped":142036,
@@ -91,7 +97,9 @@ def populateMetaData(spocdict,query_cat_dict,query_criticality_dict, status_dict
         "Declined":142038,
         "Joining":142039,
         "Joined":142040,
-        "Offer Declined":142012#TODO
+        "Offer Declined":142038,#TODO
+        "offer declined - willing to negotiate":142038,#TODO
+        "No Response":142013#TODO
     }
     for val in tempDict.keys():
         status_dict[val.lower()]=tempDict[val]
