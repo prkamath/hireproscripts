@@ -1,7 +1,7 @@
 from dbconstants import *
 import MySQLdb
 from openpyxl import load_workbook
-from datetime import datetime
+from datetime import datetime,timedelta
 import uuid
 import json
 import requests
@@ -170,7 +170,27 @@ def getCandidateId(email):
     db.close()
     return candId
 
+def entryForCandSpocExists(candidateid,spocName,spocDict):
+    db = MySQLdb.connect(host=DB_IP,    # your host, usually localhost
+            user=DB_USER,         # your username
+            passwd=DB_PASSWORD,  # your password
+            db=DB_DBNAME)        # name of the data base
+    cur = db.cursor()
+    userid=spocDict[spocName]
+    tempString="select id from candidate_spocs where candidate_id=%d and user_id=%d"%(candidateid,userid)
+    cur.execute(tempString)
+    row=cur.fetchone()
+    if (row != None):
+        print "Entry for candidate exists"
+        return 1
+    else:
+        return 0
+
 def createCandSpocs(candidateid,spocName,spocDict):
+    if (entryForCandSpocExists(candidateid,spocName,spocDict)):
+        print "Repeated entry"
+        return 0
+
     db = MySQLdb.connect(host=DB_IP,    # your host, usually localhost
             user=DB_USER,         # your username
             passwd=DB_PASSWORD,  # your password
@@ -184,6 +204,7 @@ def createCandSpocs(candidateid,spocName,spocDict):
     cur.execute(tempstring)
     db.commit()
     db.close()
+    return 1
 
 
 def updateCandidateStaffingProfile(staffingProfileId,expectedDateOfJoining):
@@ -366,6 +387,19 @@ def createStatusEntries(ca_id,new_status_id,spoc,last_called):
             print ("Updated SS entry for id =%s"%(ss_id))
 
     if create_ssh_entry == True:
+        #First update the older entry
+        olderDate=last_called - timedelta(2)#2 days in the past
+        olderDate=str(olderDate)
+        query = """update staffing_status_historys set created_on = %s where staffingstatus_id=%s"""
+        qpList = []
+        qpList.append(olderDate)
+        qpList.append(ss_id)
+
+        int_executeQuery(query,qpList)
+        if VERBOSE_DEBUG_SETTING:
+            print ("Updated history entry for id =%s"%(ss_id))
+
+
         query = """insert into staffing_status_historys(status_id,
                    created_by,created_on,staffingstatus_id)
                    values(%s,%s,%s,%s)"""
@@ -521,7 +555,10 @@ if __name__=="__main__":
         try:
             #Now update the DOJ for all entries
             updateCandidateStaffingProfile(singleRow['candidatestaffingprofileid'],singleRow['ExpectedDOJ'])
-            createCandSpocs(singleRow['CandidateIdPrimaryKey'],singleRow['spocname'],spocdict)
+
+            #If we cannot create a spocs then we will not proceed
+            if (not createCandSpocs(singleRow['CandidateIdPrimaryKey'],singleRow['spocname'],spocdict)):
+                continue
             is_pending = 0
             queryDetails=singleRow['QueryDetails']
 
