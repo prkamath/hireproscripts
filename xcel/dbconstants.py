@@ -50,7 +50,7 @@ template= """{
 }"""
 
 
-def populateMetaData(spocdict,query_cat_dict,query_criticality_dict, status_dict):
+def populateMetaData(spocdict,query_cat_dict,query_criticality_dict, status_dict,reasons_dict):
     if (DB_TENANT_ID == 586):
         spocdict['Akanksha']=9745
         spocdict['Soumya']=9745
@@ -133,8 +133,39 @@ def populateMetaData(spocdict,query_cat_dict,query_criticality_dict, status_dict
             "Joined":142040,
             "Offer Declined":142038,#TODO
             "offer declined - willing to negotiate":142038,#TODO
-            "No Response":142013#TODO
+            "No Response":142013,#TODO
+            "Offer Declined but like to negotiate":142604,
+            "Offered":142605
         }
     for val in tempDict.keys():
         status_dict[val.lower()]=tempDict[val]
     print status_dict
+
+    tmpReasons = {
+        "BGV Negative":"519" ,
+        "Document Insufficient":"520" ,
+        "Behavioural Concerns":"521" ,
+        "Not Reachable":"522" ,
+        "Company Retained":"524" ,
+        "Counter Offer":"525" ,
+        "Date of Joining":"526" ,
+        "Delayed Offer":"527" ,
+        "Designation":"528" ,
+        "Employment Contract":"529" ,
+        "Higher Studies":"532" ,
+        "Illness":"533" ,
+        "Location Constraints":"534" ,
+        "Low Salary":"535" ,
+        "Offer Revoked":"536" ,
+        "Onsite Opportunity":"537" ,
+        "Personal Reasons":"538" ,
+        "Shifts":"539" ,
+        "Technology":"540" ,
+        "Travel":"541" ,
+        "Others":"542" ,
+        "Family Constraints":"544" ,
+        "BGV Negative":"545" 
+    }
+    for val in tempReasons.keys():
+        reasons_dict[val.lower()]=tempReasons[val]
+    print reasons_dict 

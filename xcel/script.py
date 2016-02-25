@@ -110,6 +110,7 @@ def parseRowIntoDict(row,singleRow):
     singleRow['Action']=row[17].value
     singleRow['Inconsistencies']=[]
     singleRow['DeclinedReason']=row[28].value# Declined Reason
+    singleRow['LikeToNegotiate']=row[29].value# Like to Negotiate (Declined cases).. id = 142604 (NAVEENA)
     singleRow['spocname']=row[30].value# POFU SPOC
     tempQueryDetails={}
     singleRow['QueryDetails']=tempQueryDetails
@@ -288,7 +289,7 @@ def createCallData(ca_id,spoc,created_on,remarks):
     if VERBOSE_DEBUG_SETTING:
         print ("Inserted SPCH entry for cand=%s with id =%s"%(ca_id,spch_id))
 
-def createStatusEntries(ca_id,new_status_id,spoc,last_called):
+def createStatusEntries(ca_id,new_status_id,spoc,last_called,ready_to_negotiate,declinereason_id):
     """
         qplist.append(ca_id)
         qplist.append(new_status_id)
@@ -359,8 +360,8 @@ def createStatusEntries(ca_id,new_status_id,spoc,last_called):
             print ("CurrentStatus for cand=%s with id =%s is the same as the new one"%(ca_id,ss_id))
             create_ssh_entry = False
     if create_ss_entry == True:
-        query = """insert into staffing_statuss (version,current_status_id,tenant_id,candidate_id,created_by,created_on,is_deleted,guid) 
-                   values(%s,%s,%s,%s,%s,%s,%s,%s)"""
+        query = """insert into staffing_statuss (version,current_status_id,tenant_id,candidate_id,created_by,created_on,is_deleted,guid,decline_reason,ready_to_negotiate) 
+                   values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
         qplist = []
         qplist.append("1")
         qplist.append(new_status_id)
@@ -370,11 +371,13 @@ def createStatusEntries(ca_id,new_status_id,spoc,last_called):
         qplist.append(last_called)
         qplist.append("0")
         qplist.append(str(uuid.uuid4()))
+        qplist.append(declinereason_id)
+        qplist.append(ready_to_negotiate)
         (colIdx,resultSet,ss_id) = int_executeQuery(query,qplist)
         if VERBOSE_DEBUG_SETTING:
             print ("Inserted SS entry for cand=%s with id =%s"%(ca_id,ss_id))
     else:
-        query = """ update staffing_statuss set version = %s,current_status_id=%s,modified_by=%s,modified_on=%s where id = %s"""
+        query = """ update staffing_statuss set version = %s,current_status_id=%s,modified_by=%s,modified_on=%s,decline_reason=%s,ready_to_negotiate=%s where id = %s"""
         version += 1
         qplist = []
         qplist.append(version)
@@ -383,6 +386,8 @@ def createStatusEntries(ca_id,new_status_id,spoc,last_called):
         qplist.append(str(last_called))
         qplist.append(ss_id)
         int_executeQuery(query,qplist)
+        qplist.append(declinereason_id)
+        qplist.append(ready_to_negotiate)
         if VERBOSE_DEBUG_SETTING:
             print ("Updated SS entry for id =%s"%(ss_id))
 
@@ -401,13 +406,15 @@ def createStatusEntries(ca_id,new_status_id,spoc,last_called):
 
 
         query = """insert into staffing_status_historys(status_id,
-                   created_by,created_on,staffingstatus_id)
-                   values(%s,%s,%s,%s)"""
+                   created_by,created_on,staffingstatus_id,decline_reason,ready_to_negotiate)
+                   values(%s,%s,%s,%s,%s,%s)"""
         qplist = []
         qplist.append(new_status_id)
         qplist.append(spoc)
         qplist.append(str(last_called))
         qplist.append(ss_id)
+        qplist.append(declinereason_id)
+        qplist.append(ready_to_negotiate)
         sshid = None
         (colIdx,resultSet,sshid) = int_executeQuery(query,qplist)
         if VERBOSE_DEBUG_SETTING:
@@ -524,7 +531,8 @@ if __name__=="__main__":
     query_cat_dict={}
     query_criticality_dict={}
     status_dict={}
-    populateMetaData(spocdict,query_cat_dict,query_criticality_dict,status_dict)
+    reasons_dict = {}
+    populateMetaData(spocdict,query_cat_dict,query_criticality_dict,status_dict,reasons_dict)
 
     count=0
     for row in ws.iter_rows(row_offset=1):
@@ -579,11 +587,26 @@ if __name__=="__main__":
                             queryDetails['QueryRemarks'],
                             is_pending
                             )
+            new_status_id = status_dict[singleRow["JoiningStatus"].lower()]
+            tmpNegotiate = singleRow['LikeToNegotiate']
+            ready_to_negotiate = None
+            if tmpNegotiate.lower() == 'yes':
+                ready_to_negotiate = "1"
+            elif tmpNegotiate.lower() == 'no':
+                ready_to_negotiate = "0"
+            declinereason_id = None
+            reason = singleRow['DeclinedReason']
+            if reason.lower() != 'NA' and reason.lower() != '' and reason.lower() != None:
+                declinereason_id = reasons_dict.get(reason.lower(),None)
+                if declinereason_id == None:
+                    print "Did not get the declined reason!!"
             createStatusEntries(
                                 singleRow['CandidateIdPrimaryKey'],
-                                status_dict[singleRow["JoiningStatus"].lower()],
+                                new_status_id,
                                 spocdict[singleRow['spocname']],
-                                singleRow['LastDateCalled']
+                                singleRow['LastDateCalled'],
+                                ready_to_negotiate,
+                                declinereason_id
                             )
             #NAVEENA remarks need to be filled!!
             createCallData(
