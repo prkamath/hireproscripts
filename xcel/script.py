@@ -137,35 +137,35 @@ def parseRowIntoDict(row,singleRow):
     return 0
 
 
-def getCandidateStaffingProfileId(email):
+def getCandidateStaffingProfileId(third_party_id):
     db = MySQLdb.connect(host=DB_IP,    # your host, usually localhost
             user=DB_USER,         # your username
             passwd=DB_PASSWORD,  # your password
             db=DB_DBNAME)        # name of the data base
     cur = db.cursor()
 
-    tempString="select candidatestaffingprofile_id from candidates where email1='%s'"%email
+    tempString="select candidatestaffingprofile_id from candidates where third_party_id=%d"%third_party_id
     cur.execute(tempString)
     row=cur.fetchone()
     if (row == None):
-        print "Unable to get CSP_ID!! for %s"%email
+        print "Unable to get CSP_ID!! for %d"%third_party_id
         return -1
     candId=row[0]
     db.close()
     return candId
 
-def getCandidateId(email):
+def getCandidateId(third_party_id):
     db = MySQLdb.connect(host=DB_IP,    # your host, usually localhost
             user=DB_USER,         # your username
             passwd=DB_PASSWORD,  # your password
             db=DB_DBNAME)        # name of the data base
     cur = db.cursor()
 
-    tempString="select id from candidates where email1='%s'"%email
+    tempString="select id from candidates where third_party_id='%d'"%third_party_id
     cur.execute(tempString)
     row=cur.fetchone()
     if (row == None):
-        print "Unable to get CA_ID!! for %s"%email
+        print "Unable to get CA_ID!! for %d"%third_party_id
         return -1
     candId=row[0]
     db.close()
@@ -190,7 +190,7 @@ def entryForCandSpocExists(candidateid,spocName,spocDict):
 def createCandSpocs(candidateid,spocName,spocDict):
     if (entryForCandSpocExists(candidateid,spocName,spocDict)):
         print "Repeated entry"
-        return 0
+        return 1
 
     db = MySQLdb.connect(host=DB_IP,    # your host, usually localhost
             user=DB_USER,         # your username
@@ -384,10 +384,10 @@ def createStatusEntries(ca_id,new_status_id,spoc,last_called,ready_to_negotiate,
         qplist.append(new_status_id)
         qplist.append(spoc)
         qplist.append(str(last_called))
-        qplist.append(ss_id)
-        int_executeQuery(query,qplist)
         qplist.append(declinereason_id)
         qplist.append(ready_to_negotiate)
+        qplist.append(ss_id)
+        int_executeQuery(query,qplist)
         if VERBOSE_DEBUG_SETTING:
             print ("Updated SS entry for id =%s"%(ss_id))
 
@@ -406,15 +406,15 @@ def createStatusEntries(ca_id,new_status_id,spoc,last_called,ready_to_negotiate,
 
 
         query = """insert into staffing_status_historys(status_id,
-                   created_by,created_on,staffingstatus_id,decline_reason,ready_to_negotiate)
-                   values(%s,%s,%s,%s,%s,%s)"""
+                   created_by,created_on,staffingstatus_id,decline_reason)
+                   values(%s,%s,%s,%s,%s)"""
         qplist = []
         qplist.append(new_status_id)
         qplist.append(spoc)
         qplist.append(str(last_called))
         qplist.append(ss_id)
         qplist.append(declinereason_id)
-        qplist.append(ready_to_negotiate)
+
         sshid = None
         (colIdx,resultSet,sshid) = int_executeQuery(query,qplist)
         if VERBOSE_DEBUG_SETTING:
@@ -547,14 +547,14 @@ if __name__=="__main__":
 
     #Here we ensure uniqueness of the createdCandidates. This and the next line is purely for debuggin
     #When actually using we know that the candidates would have already been created
-    createAllCandidates(allRows)
+    #createAllCandidates(allRows)
 
     #Load all remaining pieces
     for singleRow in allRows:
         print singleRow
         if ('EmailId' in singleRow):
-            singleRow['candidatestaffingprofileid']= getCandidateStaffingProfileId(singleRow['EmailId'])
-            singleRow['CandidateIdPrimaryKey']=getCandidateId(singleRow['EmailId'])
+            singleRow['candidatestaffingprofileid']= getCandidateStaffingProfileId(singleRow['CandidateId'])
+            singleRow['CandidateIdPrimaryKey']=getCandidateId(singleRow['CandidateId'])
 
     for singleRow in allRows:
         if (singleRow['CandidateIdPrimaryKey'] == -1):
