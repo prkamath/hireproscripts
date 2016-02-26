@@ -122,7 +122,7 @@ def parseRowIntoDict(row,singleRow):
             tempQueryDetails['QueryRaisedDate']=row[20].value
             tempQueryDetails['QueryResolvedDate']=row[21].value
             tempQueryRemarks=row[24].value#Query Remarks
-            tempQueryDetails['QueryRemarks']=tempQueryRemarks
+            tempQueryDetails['QueryRemarks']=tempQueryRemarks.encode('latin-1', 'ignore')
             #gap=tempQueryDetails['QueryResolvedDate']-tempQueryDetails['QueryRaisedDate']
             #tempQueryDetails['NoOfDaysForQueryResolution']=gap.days
     except:
@@ -132,7 +132,8 @@ def parseRowIntoDict(row,singleRow):
 
     callStatusDetails=[]
     singleRow['CallStatus']=callStatusDetails
-    singleRow['AllCallDetails']=row[27].value#Remarks
+    tempustring=row[27].value#Remarks
+    singleRow['AllCallDetails']=tempustring.encode('latin-1', 'ignore')
     #parseCallStatusDetails(row[27].value,callStatusDetails)
     return 0
 
@@ -144,7 +145,7 @@ def getCandidateStaffingProfileId(third_party_id):
             db=DB_DBNAME)        # name of the data base
     cur = db.cursor()
 
-    tempString="select candidatestaffingprofile_id from candidates where third_party_id=%d"%third_party_id
+    tempString="select candidatestaffingprofile_id from candidates where third_party_id=%d and tenant_id=%d"%(third_party_id,DB_TENANT_ID)
     cur.execute(tempString)
     row=cur.fetchone()
     if (row == None):
@@ -161,7 +162,7 @@ def getCandidateId(third_party_id):
             db=DB_DBNAME)        # name of the data base
     cur = db.cursor()
 
-    tempString="select id from candidates where third_party_id='%d'"%third_party_id
+    tempString="select id from candidates where third_party_id='%d' and tenant_id=%d"%(third_party_id,DB_TENANT_ID)
     cur.execute(tempString)
     row=cur.fetchone()
     if (row == None):

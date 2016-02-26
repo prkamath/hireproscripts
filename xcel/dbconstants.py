@@ -1,19 +1,25 @@
-DB_IP="10.0.5.88"
-DB_USER="ashish"
-#DB_IP="127.0.0.1"
-#DB_USER="appserver"
-DB_PASSWORD="data"
-DB_DBNAME="appserver_core"
-#DB_TENANT_ID=1375
-DB_TENANT_ID=586
+DB_TENANT_ID=1375
+#DB_TENANT_ID=636
+#DB_TENANT_ID=586 #"pofu"
 SPOC_CREATED_BY=6492
 OUTBOUND_CALL = 16505 #call_type -> id from catalog_values where value = "OutBoundCall" and tenant_id = 1	
 COMPLETED_CALL = 16512 # id from ccatalog_values where value = "Completed" and tenant_id = 1
 XCEL_SHEET_NAME="/home/kamath/source/scripts/hireproscripts/xcel/NewBook.xlsx"
-START_ROW_TO_PARSE=120
-MAX_ROWS_TO_PARSE=10
+START_ROW_TO_PARSE=23
+MAX_ROWS_TO_PARSE=25
 MAX_ROWS_TO_CREATE=25
 VERBOSE_DEBUG_SETTING=1
+
+if (DB_TENANT_ID == 1375):
+    DB_IP=
+    DB_USER=""
+    DB_PASSWORD=""
+    DB_DBNAME=""
+else:
+    DB_IP="10.0.5.88"
+    DB_USER="ashish"
+    DB_PASSWORD="data"
+    DB_DBNAME="appserver_core"
 
 SERVICE_URL="http://%s:8000//py/api/v1/bulkimport"
 SERVICE_IP="10.0.5.88"
@@ -51,7 +57,7 @@ template= """{
 
 
 def populateMetaData(spocdict,query_cat_dict,query_criticality_dict, status_dict,reasons_dict):
-    if (DB_TENANT_ID == 586):
+    if (DB_TENANT_ID == 636):
         spocdict['Akanksha']=9745
         spocdict['Soumya']=9745
         spocdict['Riya']=9745
@@ -85,7 +91,7 @@ def populateMetaData(spocdict,query_cat_dict,query_criticality_dict, status_dict
     query_criticality_dict['Level 2']=36171
     query_criticality_dict['Level 3']=36172
     query_criticality_dict['No Query']=1
-    if (DB_TENANT_ID == 586):
+    if (DB_TENANT_ID == 636):
         tempDict={
             "BGV Yet to Complete / Initiate":54764,
             "Yet to Intiate POFU":54764,
@@ -133,13 +139,14 @@ def populateMetaData(spocdict,query_cat_dict,query_criticality_dict, status_dict
             "Joined":142040,
             "Offer Declined":142038,#TODO
             "offer declined - willing to negotiate":142038,#TODO
-            "No Response":142013,#TODO
+            "No Response":142054,#TODO
             "Offer Declined but like to negotiate":142604,
             "Offered":142605
         }
     for val in tempDict.keys():
         status_dict[val.lower()]=tempDict[val]
     print status_dict
+
 
     tmpReasons = {
         "BGV Negative":"519" ,
@@ -166,6 +173,6 @@ def populateMetaData(spocdict,query_cat_dict,query_criticality_dict, status_dict
         "Family Constraints":"544" ,
         "BGV Negative":"545" 
     }
-    for val in tempReasons.keys():
-        reasons_dict[val.lower()]=tempReasons[val]
+    for val in tmpReasons.keys():
+        reasons_dict[val.lower()]=tmpReasons[val]
     print reasons_dict 
