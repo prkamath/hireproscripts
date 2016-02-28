@@ -128,6 +128,7 @@ def parseRowIntoDict(row,singleRow):
     except:
         singleRow['Inconsistencies'].append("DateTimeError")
 
+    singleRow['Stage']=row[25].value#Stages
     singleRow['JoiningStatus']=row[26].value#Status As Per Last Call
 
     callStatusDetails=[]
@@ -210,6 +211,7 @@ def createCandSpocs(candidateid,spocName,spocDict):
 
 
 def updateCandidateStaffingProfile(staffingProfileId,expectedDateOfJoining):
+    return # NAVEENA
     db = MySQLdb.connect(host=DB_IP,    # your host, usually localhost
             user=DB_USER,         # your username
             passwd=DB_PASSWORD,  # your password
@@ -488,22 +490,30 @@ def createCandidates(allRows):
     ret=requests.post(url=serviceUrl,data=jsonStr,headers=headers)
     print ret.text
 
-def checkSanityOfDicts(singleRow,spocdict,query_cat_dict,query_criticality_dict,status_dict):
-
+def checkSanityOfDicts(singleRow,spocdict,query_cat_dict,query_criticality_dict,status_dict,rowid):
     spocname=singleRow["spocname"]
     if (spocname  not in spocdict):
-        print "####Missing spocname" + spocname
+        print "####Missing spocname  " + spocname + str(rowid)
         raise ValueError('A very specific bad thing happened')
 
     if 'QueryType' in singleRow['QueryDetails']:
         querytype=singleRow['QueryDetails']['QueryType']
         if (querytype not in query_cat_dict):
-            print "#####Missing query category#####"
+            print "#####Missing query category#####   "  + str(rowid)
             raise ValueError('A very specific bad thing happened')
 
+    stage = singleRow["Stage"]
+    if (stage.lower() not in status_dict):
+        print "#####Missing Stage!!#####  " + str(rowid)
+        raise ValueError('A very specific bad thing happened')
+    else:
+        valid_status_dict = status_dict.get(stage.lower(),None)
     joiningstatus=singleRow["JoiningStatus"]
-    if (joiningstatus.lower() not in status_dict):
-        print "#####Missing query category#####"
+    if (joiningstatus.lower() not in valid_status_dict):
+        print "#####Missing Status in the given status!! #####  " + str(rowid) + " " + stage + " " + joiningstatus
+        print  valid_status_dict
+        print "\n\n\n"
+        print singleRow
         raise ValueError('A very specific bad thing happened')
 
 def createAllCandidates(allRows):
@@ -532,17 +542,18 @@ if __name__=="__main__":
     query_cat_dict={}
     query_criticality_dict={}
     status_dict={}
-    reasons_dict = {}
-    populateMetaData(spocdict,query_cat_dict,query_criticality_dict,status_dict,reasons_dict)
+    populateMetaData(spocdict,query_cat_dict,query_criticality_dict,status_dict)
 
     count=0
+
+    print "\n\n\n\n"
     for row in ws.iter_rows(row_offset=1):
         singleRow={}
         ret=parseRowIntoDict(row,singleRow)
         if (0==ret) and (count in range(START_ROW_TO_PARSE,START_ROW_TO_PARSE+MAX_ROWS_TO_PARSE)) and ('EmailId' in singleRow):
             allRows.append(singleRow)
         if (0==ret):
-            checkSanityOfDicts(singleRow,spocdict,query_cat_dict,query_criticality_dict,status_dict)
+            checkSanityOfDicts(singleRow,spocdict,query_cat_dict,query_criticality_dict,status_dict,count)
         count = count+1
 
 
@@ -552,7 +563,7 @@ if __name__=="__main__":
 
     #Load all remaining pieces
     for singleRow in allRows:
-        print singleRow
+        #print singleRow
         if ('EmailId' in singleRow):
             singleRow['candidatestaffingprofileid']= getCandidateStaffingProfileId(singleRow['CandidateId'])
             singleRow['CandidateIdPrimaryKey']=getCandidateId(singleRow['CandidateId'])
@@ -560,7 +571,7 @@ if __name__=="__main__":
     for singleRow in allRows:
         if (singleRow['CandidateIdPrimaryKey'] == -1):
             continue
-        print singleRow
+        #print singleRow
         try:
             #Now update the DOJ for all entries
             updateCandidateStaffingProfile(singleRow['candidatestaffingprofileid'],singleRow['ExpectedDOJ'])
@@ -588,19 +599,27 @@ if __name__=="__main__":
                             queryDetails['QueryRemarks'],
                             is_pending
                             )
-            new_status_id = status_dict[singleRow["JoiningStatus"].lower()]
             tmpNegotiate = singleRow['LikeToNegotiate']
             ready_to_negotiate = None
-            if tmpNegotiate.lower() == 'yes':
-                ready_to_negotiate = "1"
-            elif tmpNegotiate.lower() == 'no':
-                ready_to_negotiate = "0"
+            if tmpNegotiate:
+                if tmpNegotiate.lower() == 'yes':
+                    ready_to_negotiate = "1"
+                elif tmpNegotiate.lower() == 'no':
+                    ready_to_negotiate = "0"
             declinereason_id = None
-            reason = singleRow['DeclinedReason']
-            if reason.lower() != 'NA' and reason.lower() != '' and reason.lower() != None:
-                declinereason_id = reasons_dict.get(reason.lower(),None)
-                if declinereason_id == None:
-                    print "Did not get the declined reason!!"
+            relevant_status_dict = status_dict.get(singleRow["Stage"].lower(),None)
+            if relevant_status_dict:
+                stat_n_reasons = relevant_status_dict.get(singleRow["JoiningStatus"].lower(),None)
+                new_status_id = stat_n_reasons["id"]
+                reason = singleRow['DeclinedReason']
+                if reason:
+                    if reason.lower() != 'na' and reason.lower() != '' and reason.lower() != None:
+                        reasons_dict = stat_n_reasons["reasons"]
+                        declinereason_id = reasons_dict.get(reason.lower(),None) 
+                        if declinereason_id == None:
+                            print "Declined reason %s not present in the dict!!"%(reason)
+                            print stat_n_reasons
+                            print singleRow
             createStatusEntries(
                                 singleRow['CandidateIdPrimaryKey'],
                                 new_status_id,
@@ -609,7 +628,6 @@ if __name__=="__main__":
                                 ready_to_negotiate,
                                 declinereason_id
                             )
-            #NAVEENA remarks need to be filled!!
             createCallData(
                         singleRow['CandidateIdPrimaryKey'],
                         spocdict[singleRow['spocname']],
@@ -619,8 +637,6 @@ if __name__=="__main__":
         except:
             tb = traceback.format_exc()
             print tb
-
-
     print "Total rows=" + str(len(allRows))
 
 '''

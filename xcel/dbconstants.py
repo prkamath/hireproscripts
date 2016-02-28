@@ -4,14 +4,18 @@ DB_TENANT_ID=1375
 SPOC_CREATED_BY=6492
 OUTBOUND_CALL = 16505 #call_type -> id from catalog_values where value = "OutBoundCall" and tenant_id = 1	
 COMPLETED_CALL = 16512 # id from ccatalog_values where value = "Completed" and tenant_id = 1
-XCEL_SHEET_NAME="/home/kamath/source/scripts/hireproscripts/xcel/NewBook.xlsx"
+XCEL_SHEET_NAME="/home/naveena/Desktop/Office/Code/BulkImport/hireproscripts/xcel/New.xlsx"
+#XCEL_SHEET_NAME="/home/kamath/source/scripts/hireproscripts/xcel/NewBook.xlsx"
+
 START_ROW_TO_PARSE=23
-MAX_ROWS_TO_PARSE=25
-MAX_ROWS_TO_CREATE=25
+MAX_ROWS_TO_PARSE=2158
+MAX_ROWS_TO_CREATE=2158
+#MAX_ROWS_TO_PARSE=25
+#MAX_ROWS_TO_CREATE=25
 VERBOSE_DEBUG_SETTING=1
 
 if (DB_TENANT_ID == 1375):
-    DB_IP=
+    DB_IP= ""
     DB_USER=""
     DB_PASSWORD=""
     DB_DBNAME=""
@@ -56,7 +60,7 @@ template= """{
 }"""
 
 
-def populateMetaData(spocdict,query_cat_dict,query_criticality_dict, status_dict,reasons_dict):
+def populateMetaData(spocdict,query_cat_dict,query_criticality_dict, status_dict):
     if (DB_TENANT_ID == 636):
         spocdict['Akanksha']=9745
         spocdict['Soumya']=9745
@@ -117,62 +121,183 @@ def populateMetaData(spocdict,query_cat_dict,query_criticality_dict, status_dict
             "No Response":54764#TODO
         }
     else:
-        tempDict={
-            "BGV Yet to Complete / Initiate":142023,
-            "Yet to Intiate POFU":142024,
-            "Yet to Intiate POFU":142025,
-            "Yet to Accept":142026,
-            "Offer Letter Not Received":142027,
-            "Offer Accepted & DOJ To Be Confirmed with Queries":142028,
-            "Offer Accepted & DOJ To Be Confirmed":142029,
-            "Offer Accepted & DOJ Confirmed with Queries":142030,
-            "Offer Accepted & DOJ Confirmed":142031,
-            "Joining Date Elapsed":142032,
-            "Invalid Contact Details":142033,
-            "Invalid Contact Details / Out of India":142033,
-            "Yet to Initiate POFU":142034,
-            "Dropped":142035,
-            "Dropped":142036,
-            "Declined":142037,
-            "Declined":142038,
-            "Joining":142039,
-            "Joined":142040,
-            "Offer Declined":142038,#TODO
-            "offer declined - willing to negotiate":142038,#TODO
-            "No Response":142054,#TODO
-            "Offer Declined but like to negotiate":142604,
-            "Offered":142605
+        tempDict = {
+            "declined": { # stage id = 142037
+                "offer declined" : {
+                     "id" : 142038,	
+                     "reasons" : {
+			     "company retained":524 ,
+			     "counter offer":525 ,
+			     "date of joining":526 ,
+			     "delayed offer":527 ,
+			     "designation":528 ,
+			     "employment contract":529 ,
+			     "higher studies":532 ,
+			     "illness":533 ,
+			     "location constraints":534 ,
+			     "low salary":535 ,
+			     "offer revoked":536 ,
+			     "onsite opportunity":537 ,
+			     "personal reasons":538 ,
+			     "shifts":539 ,
+			     "technology":540 ,
+			     "travel":541 ,
+			     "others":542 ,
+			     "family constraints":544 ,
+			     "family constraint":544 ,
+			     "bgv negative":545,
+                             "behavioural concerns" : 548  ,
+                             "behavioral concerns" : 548
+		     }
+                },
+                "offer declined - willing to negotiate" : {
+                     "id" : 142038,	
+                     "reasons" : {
+			     "company retained":524 ,
+			     "counter offer":525 ,
+			     "date of joining":526 ,
+			     "delayed offer":527 ,
+			     "designation":528 ,
+			     "employment contract":529 ,
+			     "higher studies":532 ,
+			     "illness":533 ,
+			     "location constraints":534 ,
+			     "low salary":535 ,
+			     "offer revoked":536 ,
+			     "onsite opportunity":537 ,
+			     "personal reasons":538 ,
+			     "shifts":539 ,
+			     "technology":540 ,
+			     "travel":541 ,
+			     "others":542 ,
+			     "family constraints":544 ,
+			     "bgv negative":545,
+                             "behavioural concerns" : 548, #NAVEENA
+		     }
+                 }
+	    },
+            "dropped" : { # stage id = 142035
+                "dropped" : {
+                    "id" : 142036,
+                    "reasons" : {
+                        "bgv negative":519 ,
+                        "document insufficient":520 ,
+                        "behavioural concerns":521 ,
+                        "behavioral concerns":521 ,
+                        "not reachable":522 ,
+                        "offer revoked":551, # NAVEENA
+		    }
+                },
+                "offer declined" : {
+                    "id" : 142036,
+                    "reasons" : {
+                        "bgv negative":519 ,
+                        "document insufficient":520 ,
+                        "behavioural concerns":521 ,
+                        "not reachable":522 ,
+                        "offer revoked":551,#NAVEENA
+		    }
+                },
+                "offer declined - willing to negotiate" : {
+                    "id" : 142036,
+                    "reasons" : {
+                        "bgv negative":519 ,
+                        "document insufficient":520 ,
+                        "behavioural concerns":521 ,
+                        "not reachable":522 ,
+                        "offer revoked":551,#NAVEENA
+		    }
+                }
+            },
+            "joining" : { # stage id = 142039
+                "joined"  : {
+                    "id" : 142040,
+                    "reasons" : {
+                    }
+                 }
+            },
+            "yet to join" : { #stage id = 142022
+                "bgv yet to complete / initiate": {
+                    "id":142023,
+                    "reasons": {
+                    }
+                 },
+                "yet to accept": {
+                    "id" : 142026,
+                    "reasons" : {
+                        "low salary":552, #NAVEENA
+                    }
+		},
+                "no response": {
+                    "id" : 142054,
+                    "reasons" : {
+                    }
+		},
+                "offered": {
+                    "id" : 142605,
+                    "reasons" : {
+                    }
+                },
+                "offer letter not received": {
+                    "id" : 142027,
+                    "reasons" : {
+                    }
+                },
+                "offer accepted & doj to be confirmed with queries": {
+                    "id" : 142028,
+                    "reasons" : {
+                    }
+		},
+                "offer accepted & doj to be confirmed": {
+                    "id":142029,
+                    "reasons" : {
+                        "date of joining" : 550 #NAVEENA
+                    }
+                },
+                "offer accepted & doj confirmed with queries": {
+                    "id":142030, 
+                    "reasons" : {
+                    }
+		},
+                "offer accepted & doj confirmed": {
+                    "id":142031, 
+                    "reasons" : {
+                        "counter offer": 549, #NAVEENA
+                    } 
+                },
+                "joining date elapsed": {
+                    "id":142032,
+                    "reasons": {
+                        "delayed offer" : 546,
+                        "low salary" : 547,
+                    }
+                },
+                "invalid contact details": {
+                    "id":142033, 
+                    "reasons" : {
+                    }
+                },
+                "invalid contact details / out of india": {
+                    "id":142033, 
+                    "reasons" : {
+                    }
+                },
+                "yet to initiate pofu": {
+                    "id":142034, 
+                    "reasons" : {
+                    }
+                },
+                "no response": {
+                    "id":142606, #NAVEENA
+                    "reasons" : {
+                    }
+                }
+            }
         }
-    for val in tempDict.keys():
-        status_dict[val.lower()]=tempDict[val]
+    for tmpkey in tempDict.keys():
+        status_dict[tmpkey]=tempDict[tmpkey]
     print status_dict
-
-
-    tmpReasons = {
-        "BGV Negative":"519" ,
-        "Document Insufficient":"520" ,
-        "Behavioural Concerns":"521" ,
-        "Not Reachable":"522" ,
-        "Company Retained":"524" ,
-        "Counter Offer":"525" ,
-        "Date of Joining":"526" ,
-        "Delayed Offer":"527" ,
-        "Designation":"528" ,
-        "Employment Contract":"529" ,
-        "Higher Studies":"532" ,
-        "Illness":"533" ,
-        "Location Constraints":"534" ,
-        "Low Salary":"535" ,
-        "Offer Revoked":"536" ,
-        "Onsite Opportunity":"537" ,
-        "Personal Reasons":"538" ,
-        "Shifts":"539" ,
-        "Technology":"540" ,
-        "Travel":"541" ,
-        "Others":"542" ,
-        "Family Constraints":"544" ,
-        "BGV Negative":"545" 
-    }
-    for val in tmpReasons.keys():
-        reasons_dict[val.lower()]=tmpReasons[val]
-    print reasons_dict 
+    #1646 => Dropped/Offer Declined with Declined Reasons Offer Revoked.. 
+    #1815 => Declined/Offer Declined-Willing to Negotiate Low Salary
+    #1538 => Dropped/Offer Declined - Document Insufficient
+    #344  => Joining and Joined and but decined reason..
