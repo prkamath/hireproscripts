@@ -146,8 +146,8 @@ def populateMetaData(spocdict,query_cat_dict,query_criticality_dict, status_dict
 			     "family constraints":544 ,
 			     "family constraint":544 ,
 			     "bgv negative":545,
-                             "behavioural concerns" : 548  ,
-                             "behavioral concerns" : 548
+                             "behavioural concerns" : 552  ,
+                             "behavioral concerns" : 552
 		     }
                 },
                 "offer declined - willing to negotiate" : {
@@ -172,7 +172,7 @@ def populateMetaData(spocdict,query_cat_dict,query_criticality_dict, status_dict
 			     "others":542 ,
 			     "family constraints":544 ,
 			     "bgv negative":545,
-                             "behavioural concerns" : 548, #NAVEENA
+                             "behavioural concerns" : 552, #NAVEENA
 		     }
                  }
 	    },
@@ -225,7 +225,7 @@ def populateMetaData(spocdict,query_cat_dict,query_criticality_dict, status_dict
                 "yet to accept": {
                     "id" : 142026,
                     "reasons" : {
-                        "low salary":552, #NAVEENA
+                        "low salary":548,
                     }
 		},
                 "no response": {
